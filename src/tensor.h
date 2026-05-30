@@ -9,13 +9,17 @@ class Tensor{
         // input keliye conversion kese hoga?
         // input->mem_array->operations
     public:
-        Tensor();
+        Tensor()=delete;
         Tensor(int,int);
     void set_mem_array();
     void stride_calc();
     std::vector<float> get_mem_array();
     std::pair<int,int> get_stride();
     std::pair<int,int> get_size2d();
+    float get_val(int i); // considering someone asks value in row major 1d 
+    float get_val(int i,int j); // considering someone asks value in 2d fashion
+    void set_val(int i,float value); // incase something wants to fill the exact thing maybe another module loops overfile themselves and fixes value instead of copying mem array then fixing then setting again
+    void set_val(int i,int j,float value); 
     Tensor(const Tensor&)=delete;
     Tensor &operator=(const Tensor&)=delete;
 };
