@@ -14,6 +14,7 @@ add_compile_options(-Wall -Wextra -Wpedantic)
 
 add_library(tensor
     src/tensor.cpp
+    src/GEMM.cpp
 )
 
 target_include_directories(tensor PUBLIC
@@ -29,5 +30,9 @@ target_link_libraries(tiny-inference PRIVATE tensor)
 add_executable(test_tensor
     test/tensor_test1.cpp
 )
+add_executable(test_gemm
+    test/gemm_test1.cpp
+)
 
 target_link_libraries(test_tensor PRIVATE tensor)
+target_link_libraries(test_gemm PRIVATE tensor)

@@ -16,7 +16,7 @@
 }*/
 Tensor::Tensor(int row,int col){
     size2d={row,col};
-    mem_array.resize(row*col);
+    mem_array.assign(row*col,0);
     stride_calc();
     //set_mem_array();
 }
@@ -58,4 +58,10 @@ void Tensor::set_val(int i,int j,float value){
      int temp=(i*size2d.second+j);
     assert(temp<(size2d.first*size2d.second));
     mem_array[temp]=value;
+}
+int Tensor::grow(){
+    return size2d.first;
+}
+int Tensor::gcol(){
+    return size2d.second;
 }
