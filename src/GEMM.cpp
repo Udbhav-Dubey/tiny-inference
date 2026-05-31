@@ -6,8 +6,9 @@ Tensor Gemm(Tensor&a,Tensor&b){
     Tensor c(a.grow(),b.gcol());
     for (int i=0;i<a.grow();i++){
          for (int k=0;k<a.gcol();k++){
+             float ak=a.get_val(i,k);
             for (int j=0;j<b.gcol();j++){
-                c.set_val(i,j,c.get_val(i,j)+(a.get_val(i,k)*b.get_val(k,j)));
+                c.set_val(i,j,c.get_val(i,j)+(ak*b.get_val(k,j)));
             }
          }
     }

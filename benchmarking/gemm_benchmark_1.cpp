@@ -31,7 +31,9 @@ void run_multi(int ar,int ac,int br,int bc){
     }
     auto end=std::chrono::high_resolution_clock::now();
     auto duration=std::chrono::duration_cast<std::chrono::nanoseconds>(end-start);
-    std::cout << ar << "X" << ac << " * " << br << "X" << bc << " = " << "total : "<< duration.count() << " average : "<< duration.count()/10 << " nanoseconds\n";
+    auto duration_seconds=std::chrono::duration_cast<std::chrono::seconds>(end-start);
+    std::cout << ar << "X" << ac << " * " << br << "X" << bc << " = " << "total : "<<duration.count() << " nanoseconds  average : "<< duration.count()/10 << " nanoseconds \n";
+    std::cout << "total : " << duration_seconds.count() << " seconds average : " << duration_seconds.count()/10 << " seconds\n";
     std::cout << "checksum :: " << C.get_val(0,0) << "\n";
 }
 int main(){
