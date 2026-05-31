@@ -25,7 +25,7 @@ void Tensor::stride_calc(){
 }
 // currently its cin depending on better altlernative as module progresses withing setting the mem_array 
 // one of the possible ways is to send a ds and copy from it but i think thats bad memory wise , consider anything wanting to deal with setting mem_array should be able to send in its stream , like in pipe in or something 
-void Tensor::set_mem_array(){
+void Tensor::set_mem_array_mt(){
     //std::cout << "fill in row by row \n";
     for (int i=0;i<(size2d.first*size2d.second);i++){
         std::cin>>mem_array[i];

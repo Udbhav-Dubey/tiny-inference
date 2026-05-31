@@ -11,7 +11,7 @@ class Tensor{
     public:
         Tensor()=delete;
         Tensor(int,int);
-    void set_mem_array();
+    void set_mem_array_mt(); // mt stands for manual test using cin
     void stride_calc();
     std::vector<float> get_mem_array();
     std::pair<int,int> get_stride();
