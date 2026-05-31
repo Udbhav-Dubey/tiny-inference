@@ -50,7 +50,7 @@ No tiling. No SIMD. No threading. No cache-aware optimizations.
 
 ---
 
- 
+
 
 ## GEMM V0.5 — Small Caching Optimization
  
@@ -85,3 +85,45 @@ No tiling. No SIMD. No threading. No cache-aware optimizations.
 - Checksums match V0 exactly — correctness preserved.
 - O(n³) scaling unchanged, as expected.
  
+---
+ 
+## GEMM V1 — Loop Order + Sum Accumulator
+ 
+### Description
+ 
+Changed loop order from `i → k → j` to `i → j → k`, and replaced per-iteration `get_val`/`set_val` on `c` with a local `sum` accumulator written back once per `(i, j)` pair.
+ 
+```cpp
+for (int i = 0; i < a.grow(); i++) {
+    for (int j = 0; j < b.gcol(); j++) {
+        float sum = 0;
+        for (int k = 0; k < a.gcol(); k++) {
+            sum += a.get_val(i, k) * b.get_val(k, j);
+        }
+        c.set_val(i, j, sum);
+    }
+}
+```
+ 
+Two changes over V0.5:
+- **Loop order `i → j → k`** — better fits the actual memory layout of the `Tensor` API, reducing cache misses on the innermost loop.
+- **`sum` accumulator** — eliminates a `get_val` + `set_val` on `c` every inner iteration; single `set_val` per output cell instead.
+No tiling. No SIMD. No threading.
+ 
+### Benchmark Results
+ 
+Averaged over 2 runs.
+ 
+| Size        | Time (ns)           | Time (s)    | vs V0.5          | vs V0            | Checksum |
+|-------------|---------------------|-------------|------------------|------------------|----------|
+| 200 × 200   | `101,099,307 ns`    | `0.101 s`   | **~1.4× faster** | **~1.8× faster** | `2664`   |
+| 500 × 500   | `1,586,692,448 ns`  | `1.587 s`   | **~1.4× faster** | **~1.8× faster** | `6732`   |
+| 1000 × 1000 | `12,724,341,597 ns` | `12.724 s`  | **~1.4× faster** | **~1.8× faster** | `13494`  |
+ 
+### Observations
+ 
+- **~1.4× faster than V0.5** and **~1.8× faster than V0** purely from loop reorder + accumulator — no hardware tricks yet.
+- The `i → j → k` order outperforming `i → k → j` suggests the `Tensor` API's internal layout favors stepping `k` in the innermost loop (likely column-major or similar).
+- Speedup is consistent across all sizes — this is a structural improvement, not a small-N artifact.
+- Checksums match exactly — correctness preserved.
+- Next logical step: fix tensor to reduce so many api calls.

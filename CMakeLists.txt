@@ -36,6 +36,10 @@ add_executable(test_gemm
 add_executable(benchmark_gemm1
     benchmarking/gemm_benchmark_1.cpp
 )
+add_executable(test_gemm_ijk
+    test/gemm_test2.cpp
+)
+target_link_libraries(test_gemm_ijk PRIVATE tensor)
 target_link_libraries(benchmark_gemm1 PRIVATE tensor)
 target_link_libraries(test_tensor PRIVATE tensor)
 target_link_libraries(test_gemm PRIVATE tensor)

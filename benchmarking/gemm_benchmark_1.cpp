@@ -7,7 +7,7 @@ int A_row_size{};
 int A_col_size{};
 int B_row_size{};
 int B_col_size{};
-void run_multi(int ar,int ac,int br,int bc){
+void run_multi(int ar,int ac,int br,int bc,bool&turn){
     A_row_size=ar;
     A_col_size=ac;
     B_row_size=br;
@@ -27,7 +27,8 @@ void run_multi(int ar,int ac,int br,int bc){
     }
     auto start=std::chrono::high_resolution_clock::now();
     for (int i=0;i<ntgmr;i++){
-       C=Gemm(A,B); 
+      if (turn==0){ C=Gemm(A,B); }
+      else {C=Gemm_ijk(A,B);}
     }
     auto end=std::chrono::high_resolution_clock::now();
     auto duration=std::chrono::duration_cast<std::chrono::nanoseconds>(end-start);
@@ -37,8 +38,16 @@ void run_multi(int ar,int ac,int br,int bc){
     std::cout << "checksum :: " << C.get_val(0,0) << "\n";
 }
 int main(){
-    run_multi(200,200,200,200);
-    run_multi(500,500,500,500);
-    run_multi(1000,1000,1000,1000);
+    bool turn=1; // if 0 then do ikj if 1 do ijk
+    std::cout << "for ijk \n";
+    run_multi(200,200,200,200,turn);
+    run_multi(500,500,500,500,turn);
+    run_multi(1000,1000,1000,1000,turn);
+    std::cout << "for ikj \n";
+    turn=0;
+    run_multi(200,200,200,200,turn);
+    run_multi(500,500,500,500,turn);
+    run_multi(1000,1000,1000,1000,turn);
+
     return 0;
 }
