@@ -3,16 +3,16 @@
 #include "../src/tensor.h"
 #include <vector>
 int main (){
-    Tensor A(65,65);
+    Tensor A(97,123);
   //  A.set_mem_array_mt();
-    for (int i=0;i<65;i++){
-       for (int j=0;j<65;j++){
+    for (int i=0;i<97;i++){
+       for (int j=0;j<123;j++){
         A.set_val(i,j,i+j);
        } 
     }
-    Tensor B(65,65);
-     for (int i=0;i<65;i++){
-       for (int j=0;j<65;j++){
+    Tensor B(123,89);
+     for (int i=0;i<123;i++){
+       for (int j=0;j<89;j++){
         B.set_val(i,j,(i+j)%7);
        } 
     }
@@ -30,8 +30,8 @@ int main (){
         }
   //      std::cout << tf[i] << " ";
     }
-    std::cout << C1.get_val(64,64) << "\n";
-    std::cout << C2.get_val(64,64) << "\n";
+    std::cout << C1.get_val(122,122) << "\n";
+    std::cout << C2.get_val(122,122) << "\n";
     return 0;
 }
 

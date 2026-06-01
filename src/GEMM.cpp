@@ -61,10 +61,13 @@ Tensor Gemm_tiled(Tensor&a,Tensor&b,int block_size){
             // here take C[i,j];
             for (int k_t=0;k_t<a_col;k_t+=block_size){
                // here take A[i,k]and B[k,j];
-               for (int i=i_t;i<std::min(32+i_t,a_row);i++){
-                for (int k=k_t;k<std::min(32+k_t,a_col);k++){
+               const int i_end=std::min(block_size+i_t,a_row);
+               const int k_end=std::min(k_t+block_size,a_col);
+               const int j_end=std::min(block_size+j_t,b_col);
+               for (int i=i_t;i<i_end;i++){
+                for (int k=k_t;k<k_end;k++){
                         float ak=A[i*a_col+k];
-                    for (int j=j_t;j<std::min(32+j_t,b_col);j++){
+                    for (int j=j_t;j<j_end;j++){
                         C[i*b_col+j]+=ak*B[k*b_col+j];
                     }
                 }

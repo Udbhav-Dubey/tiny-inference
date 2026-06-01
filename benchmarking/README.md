@@ -203,5 +203,83 @@ Two changes introduced simultaneously, benchmarked separately to isolate contrib
 - **Release mode on top (V2b ikj)** added another ~13.6× — compiler auto-vectorization is the dominant factor overall.
 - With raw pointers, **ikj finally beats ijk** as cache theory predicts for row-major data. The API was previously masking the true access pattern cost.
 - Combined, V2b ikj is **~122× faster than V0** with no tiling, no SIMD written by hand, no threading.
+
+
+  ---
+ 
+## GEMM V3 — Tiled GEMM (Work in Progress)
+ 
+### Description
+ 
+Introduced cache blocking (tiling) over all three loop dimensions (`i`, `j`, `k`), with configurable `block_size`. The idea is to keep a tile of A, B, and C in L1/L2 cache and amortize the cost of memory loads across the tile.
+ 
+```cpp
+for (int i_t = 0; i_t < a_row; i_t += block_size) {
+    for (int j_t = 0; j_t < b_col; j_t += block_size) {
+        for (int k_t = 0; k_t < a_col; k_t += block_size) {
+            const int i_end = std::min(i_t + block_size, a_row);
+            const int k_end = std::min(k_t + block_size, a_col);
+            const int j_end = std::min(j_t + block_size, b_col);
+            for (int i = i_t; i < i_end; i++) {
+                for (int k = k_t; k < k_end; k++) {
+                    float ak = A[i * a_col + k];
+                    for (int j = j_t; j < j_end; j++) {
+                        C[i * b_col + j] += ak * B[k * b_col + j];
+                    }
+                }
+            }
+        }
+    }
+}
+```
+ 
+Inner loop order inside each tile is `i → k → j` — same order as the flat ikj kernel, meaning no additional cache access improvement is gained from tiling itself.
+ 
+### Benchmark Results
+ 
+All runs in Release mode.
+ 
+#### 200 × 200
+ 
+| Variant     | Time (ns)       | Time (s)   | vs ikj           |
+|-------------|-----------------|------------|------------------|
+| ijk         | `5,081,632 ns`  | `0.005 s`  | **~8.2× slower** |
+| ikj         | `623,378 ns`    | `0.001 s`  | —                |
+| tiled(16)   | `1,378,176 ns`  | `0.001 s`  | **~2.2× slower** |
+| tiled(32)   | `1,023,032 ns`  | `0.001 s`  | **~1.6× slower** |
+| tiled(64)   | `821,334 ns`    | `0.001 s`  | **~1.3× slower** |
+| tiled(128)  | `710,882 ns`    | `0.001 s`  | **~1.1× slower** |
+ 
+#### 500 × 500
+ 
+| Variant     | Time (ns)        | Time (s)   | vs ikj           |
+|-------------|------------------|------------|------------------|
+| ijk         | `88,448,179 ns`  | `0.088 s`  | **~8.2× slower** |
+| ikj         | `10,808,667 ns`  | `0.011 s`  | —                |
+| tiled(16)   | `21,145,118 ns`  | `0.021 s`  | **~2.0× slower** |
+| tiled(32)   | `14,717,568 ns`  | `0.015 s`  | **~1.4× slower** |
+| tiled(64)   | `11,774,820 ns`  | `0.012 s`  | **~1.1× slower** |
+| tiled(128)  | `11,546,952 ns`  | `0.012 s`  | **~1.1× slower** |
+ 
+#### 1000 × 1000
+ 
+| Variant     | Time (ns)          | Time (s)   | vs ikj            |
+|-------------|--------------------|------------|-------------------|
+| ijk         | `713,915,211 ns`   | `0.714 s`  | **~8.9× slower**  |
+| ikj         | `80,631,651 ns`    | `0.081 s`  | —                 |
+| tiled(16)   | `168,931,100 ns`   | `0.169 s`  | **~2.1× slower**  |
+| tiled(32)   | `119,957,688 ns`   | `0.120 s`  | **~1.5× slower**  |
+| tiled(64)   | `100,314,547 ns`   | `0.100 s`  | **~1.2× slower**  |
+| tiled(128)  | `98,737,990 ns`    | `0.099 s`  | **~1.2× slower**  |
+ 
+### Observations
+ 
+- Tiled GEMM did not outperform the flat ikj kernel at any size or tile size.
+- The inner loop order inside each tile is `i → k → j` — identical to the flat ikj kernel — so tiling adds boundary calculation overhead without changing the actual memory access pattern. This is the core issue.
+- Performance improves steadily as tile size grows (16 → 128), but plateaus between 64 and 128 — diminishing returns as tile size approaches matrix size.
+- Small tiles (16, 32) introduce significant overhead relative to the benefit, especially at 200×200.
+- For tiling to actually beat ikj, the inner tile loop order needs to be rethought to ensure the working set genuinely fits in L1 and the access pattern differs from the flat kernel.
+- This is a learning implementation — the result itself is the lesson.
+ 
  
 
