@@ -7,7 +7,7 @@ int A_row_size{};
 int A_col_size{};
 int B_row_size{};
 int B_col_size{};
-void run_multi(int ar,int ac,int br,int bc,bool&turn){
+void run_multi(int ar,int ac,int br,int bc,int block_size=0){
     A_row_size=ar;
     A_col_size=ac;
     B_row_size=br;
@@ -27,7 +27,7 @@ void run_multi(int ar,int ac,int br,int bc,bool&turn){
     }
     auto start=std::chrono::high_resolution_clock::now();
     for (int i=0;i<ntgmr;i++){
-      C=Gemm_ijk(A,B);
+      C=Gemm_tiled(A,B,block_size);
     }
     auto end=std::chrono::high_resolution_clock::now();
     auto duration=std::chrono::duration_cast<std::chrono::nanoseconds>(end-start);
@@ -37,7 +37,13 @@ void run_multi(int ar,int ac,int br,int bc,bool&turn){
     std::cout << "checksum :: " << C.get_val(0,0) << "\n";
 }
 int main(){
-    run_multi(200,200,200,200);
-    run_multi(500,500,500,500);
-    run_multi(1000,1000,1000,1000);
+    int i=16;
+    while(i<=128){
+    std::cout << "\nfor tiled "<< i <<"  block size \n";
+    run_multi(200,200,200,200,i);
+    run_multi(500,500,500,500,i);
+    run_multi(1000,1000,1000,1000,i);
+    i*=2;
+    }
+    return 0;
 }
