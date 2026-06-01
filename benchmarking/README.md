@@ -127,3 +127,81 @@ Averaged over 2 runs.
 - Speedup is consistent across all sizes — this is a structural improvement, not a small-N artifact.
 - Checksums match exactly — correctness preserved.
 - Next logical step: fix tensor to reduce so many api calls.
+
+---
+ 
+## GEMM V2 — Raw Pointer Access + Release Mode
+ 
+### Description
+ 
+Removed all `Tensor` API (`get_val` / `set_val`) calls inside the GEMM loops. Instead, raw pointers to the underlying data are extracted once before the loops and all indexing is done with direct pointer arithmetic.
+ 
+Both loop orders benchmarked: `i → j → k` (ijk) and `i → k → j` (ikj).
+ 
+```cpp
+// ikj — best performer in release
+const float* A = a.data();
+const float* B = b.data();
+float* C = c.data();
+ 
+for (int i = 0; i < a_row; i++) {
+    for (int k = 0; k < a_col; k++) {
+        float ak = A[i * a_col + k];
+        for (int j = 0; j < b_col; j++) {
+            C[i * b_col + j] += ak * B[k * b_col + j];
+        }
+    }
+}
+```
+ 
+Two changes introduced simultaneously, benchmarked separately to isolate contribution:
+- **Raw pointer access** — eliminates API call overhead on every element access.
+- **Release mode** (`-DCMAKE_BUILD_TYPE=Release`) — enables compiler optimizations: inlining, auto-vectorization, loop transformations.
+### Benchmark Results
+ 
+#### V2a — Raw Pointers, Debug Mode
+*Isolates the impact of API removal alone.*
+ 
+##### ijk
+ 
+| Size        | Time (ns)           | Time (s)   | vs V1 (ijk)      | Checksum |
+|-------------|---------------------|------------|------------------|----------|
+| 200 × 200   | `23,293,777 ns`     | `0.023 s`  | **~4.3× faster** | `2664`   |
+| 500 × 500   | `139,523,219 ns`    | `0.140 s`  | **~11.4× faster**| `6732`   |
+| 1000 × 1000 | `2,957,090,149 ns`  | `2.957 s`  | **~4.3× faster** | `13494`  |
+ 
+##### ikj
+ 
+| Size        | Time (ns)           | Time (s)   | vs V1 (ijk)      | Checksum |
+|-------------|---------------------|------------|------------------|----------|
+| 200 × 200   | `21,372,358 ns`     | `0.021 s`  | **~4.7× faster** | `2664`   |
+| 500 × 500   | `327,450,832 ns`    | `0.327 s`  | **~4.8× faster** | `6732`   |
+| 1000 × 1000 | `2,593,207,678 ns`  | `2.593 s`  | **~4.9× faster** | `13494`  |
+ 
+#### V2b — Raw Pointers, Release Mode
+*Adds compiler optimizations on top of V2a.*
+ 
+##### ijk
+ 
+| Size        | Time (ns)          | Time (s)   | vs V2a (ijk)      | vs V1            | vs V0             | Checksum |
+|-------------|--------------------|------------|-------------------|------------------|-------------------|----------|
+| 200 × 200   | `7,742,424 ns`     | `0.008 s`  | **~3.0× faster**  | **~13.1× faster**| **~23.8× faster** | `2664`   |
+| 500 × 500   | `139,523,219 ns`   | `0.140 s`  | **~1.0×**         | **~11.4× faster**| **~20.7× faster** | `6732`   |
+| 1000 × 1000 | `2,257,474,974 ns` | `2.257 s`  | **~1.3× faster**  | **~5.6× faster** | **~10.3× faster** | `13494`  |
+ 
+##### ikj — best overall
+ 
+| Size        | Time (ns)          | Time (s)   | vs V2a (ikj)      | vs V1            | vs V0              | Checksum |
+|-------------|--------------------|------------|-------------------|------------------|--------------------|----------|
+| 200 × 200   | `2,581,415 ns`     | `0.003 s`  | **~8.3× faster**  | **~39.2× faster**| **~71.3× faster**  | `2664`   |
+| 500 × 500   | `25,832,711 ns`    | `0.026 s`  | **~12.7× faster** | **~61.4× faster**| **~112.2× faster** | `6732`   |
+| 1000 × 1000 | `190,455,459 ns`   | `0.190 s`  | **~13.6× faster** | **~66.8× faster**| **~121.7× faster** | `13494`  |
+ 
+### Observations
+ 
+- **API removal alone (V2a)** gave ~4.9× speedup at 1000×1000 — the `get_val`/`set_val` overhead was significant even in a simple loop.
+- **Release mode on top (V2b ikj)** added another ~13.6× — compiler auto-vectorization is the dominant factor overall.
+- With raw pointers, **ikj finally beats ijk** as cache theory predicts for row-major data. The API was previously masking the true access pattern cost.
+- Combined, V2b ikj is **~122× faster than V0** with no tiling, no SIMD written by hand, no threading.
+ 
+

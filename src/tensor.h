@@ -26,4 +26,5 @@ class Tensor{
     int gcol();
     Tensor(Tensor&&)noexcept=default;
     Tensor&operator=(Tensor&&)noexcept=default;
+    float*data();
 };

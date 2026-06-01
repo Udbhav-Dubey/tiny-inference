@@ -3,9 +3,9 @@
 #include "../src/tensor.h"
 #include <vector>
 int main (){
-    Tensor A(2,2);
+    Tensor A(2,3);
     A.set_mem_array_mt();
-    Tensor B(2,2);
+    Tensor B(3,2);
     B.set_mem_array_mt();
     Tensor C = Gemm(A,B);
     std::vector<float>tf=C.get_mem_array();

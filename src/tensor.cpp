@@ -65,3 +65,6 @@ int Tensor::grow(){
 int Tensor::gcol(){
     return size2d.second;
 }
+float* Tensor::data(){
+    return mem_array.data();
+}
