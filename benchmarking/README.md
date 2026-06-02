@@ -281,5 +281,31 @@ All runs in Release mode.
 - For tiling to actually beat ikj, the inner tile loop order needs to be rethought to ensure the working set genuinely fits in L1 and the access pattern differs from the flat kernel.
 - This is a learning implementation — the result itself is the lesson.
  
- 
+
+## SIMD Investigation 1 — GCC Auto-Vectorization
+
+### Goal
+
+Determine whether GCC is already vectorizing the GEMM kernels.
+
+### Findings
+
+- GCC auto-vectorized all three GEMM implementations at `-O3`.
+- `Gemm()` and `Gemm_tiled()` use SSE vector instructions (`mulps`, `addps`) on the inner `j` loop.
+- `Gemm_ijk()` uses SIMD reduction-style vectorization.
+- No AVX (`ymm`) instructions observed.
+- No FMA (`vfmadd`) instructions observed.
+
+### Conclusions
+
+The performance advantage of the `ikj` kernel is not explained solely by vectorization.
+
+Performance appears to come from a combination of:
+
+1. Good cache locality
+2. Effective compiler auto-vectorization
+
+This investigation confirmed that GCC is already generating SIMD code for the hot loop without any manually written intrinsics.
+
+
 
