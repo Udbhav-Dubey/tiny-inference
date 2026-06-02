@@ -1,0 +1,1082 @@
+	.file	"GEMM.cpp"
+	.text
+#APP
+	.globl _ZSt21ios_base_library_initv
+	.section	.rodata.str1.1,"aMS",@progbits,1
+.LC0:
+	.string	"Tensor Gemm(Tensor&, Tensor&)"
+.LC1:
+	.string	"GEMM.cpp"
+	.section	.rodata.str1.8,"aMS",@progbits,1
+	.align 8
+.LC2:
+	.string	"a_col==b_row&&\"need to get a.col==b.row equal for matrix multiply\""
+#NO_APP
+	.section	.text.unlikely,"ax",@progbits
+.LCOLDB3:
+	.text
+.LHOTB3:
+	.p2align 4
+	.globl	_Z4GemmR6TensorS0_
+	.type	_Z4GemmR6TensorS0_, @function
+_Z4GemmR6TensorS0_:
+.LFB3449:
+	.cfi_startproc
+	.cfi_personality 0x9b,DW.ref.__gxx_personality_v0
+	.cfi_lsda 0x1b,.LLSDA3449
+	pushq	%rbp
+	.cfi_def_cfa_offset 16
+	.cfi_offset 6, -16
+	movq	%rsp, %rbp
+	.cfi_def_cfa_register 6
+	pushq	%r15
+	pushq	%r14
+	pushq	%r13
+	pushq	%r12
+	pushq	%rbx
+	.cfi_offset 15, -24
+	.cfi_offset 14, -32
+	.cfi_offset 13, -40
+	.cfi_offset 12, -48
+	.cfi_offset 3, -56
+	movq	%rdx, %r15
+	movq	%rsi, %r13
+	andq	$-32, %rsp
+	subq	$96, %rsp
+	movq	%rdi, 8(%rsp)
+	movq	%rsi, %rdi
+.LEHB0:
+	call	_ZN6Tensor4dataEv@PLT
+	movq	%r15, %rdi
+	movq	%rax, %r12
+	call	_ZN6Tensor4dataEv@PLT
+	movq	%r13, %rdi
+	movq	%rax, %rbx
+	call	_ZN6Tensor4growEv@PLT
+	movq	%r13, %rdi
+	movl	%eax, 88(%rsp)
+	call	_ZN6Tensor4gcolEv@PLT
+	movq	%r15, %rdi
+	movl	%eax, %r14d
+	call	_ZN6Tensor4growEv@PLT
+	movq	%r15, %rdi
+	movl	%eax, %r13d
+	call	_ZN6Tensor4gcolEv@PLT
+	cmpl	%r13d, %r14d
+	jne	.L31
+	movq	8(%rsp), %r13
+	movl	88(%rsp), %esi
+	movl	%eax, %edx
+	movl	%eax, %r15d
+	movq	%r13, %rdi
+	call	_ZN6TensorC1Eii@PLT
+.LEHE0:
+	movq	%r13, %rdi
+.LEHB1:
+	call	_ZN6Tensor4dataEv@PLT
+.LEHE1:
+	movq	%rax, %r13
+	movl	88(%rsp), %eax
+	testl	%eax, %eax
+	jle	.L1
+	testl	%r14d, %r14d
+	jle	.L1
+	testl	%r15d, %r15d
+	jle	.L1
+	leaq	0(,%r14,4), %r11
+	movl	%r15d, %r9d
+	movl	%r15d, %edi
+	movl	$0, 80(%rsp)
+	leaq	(%r12,%r11), %rdx
+	shrl	$3, %r9d
+	movq	%r13, %r12
+	movq	%r11, 40(%rsp)
+	movq	%rdx, 88(%rsp)
+	leal	-1(%r15), %edx
+	subq	%rbx, %r12
+	movl	%eax, %r14d
+	movl	%edx, 84(%rsp)
+	movl	%r15d, %edx
+	movq	%r12, 16(%rsp)
+	leaq	0(,%rdx,4), %rsi
+	movq	%rdx, 64(%rsp)
+	movl	%r9d, %edx
+	sall	$3, %r9d
+	subl	%r9d, %edi
+	salq	$5, %rdx
+	movq	%rsi, 32(%rsp)
+	movl	%edi, 52(%rsp)
+	decl	%edi
+	movl	%edi, 48(%rsp)
+	xorl	%edi, %edi
+	.p2align 4
+	.p2align 3
+.L4:
+	movslq	80(%rsp), %rax
+	xorl	%r8d, %r8d
+	movl	%edi, 28(%rsp)
+	movq	16(%rsp), %rsi
+	movq	88(%rsp), %r10
+	subq	40(%rsp), %r10
+	leaq	0(,%rax,4), %rcx
+	movq	%rax, 56(%rsp)
+	leaq	-4(%rcx,%rsi), %rsi
+	leaq	0(%r13,%rcx), %rax
+	movq	%rsi, 72(%rsp)
+.L19:
+	cmpl	$2, 84(%rsp)
+	movl	%r8d, %r11d
+	vmovss	(%r10), %xmm2
+	jbe	.L47
+.L6:
+	movq	72(%rsp), %rcx
+	leaq	0(,%r8,4), %rdi
+	subq	%rdi, %rcx
+	cmpq	$24, %rcx
+	jbe	.L5
+	cmpl	$6, 84(%rsp)
+	jbe	.L22
+	leaq	(%rbx,%rdi), %rsi
+	vbroadcastss	%xmm2, %ymm1
+	xorl	%ecx, %ecx
+	.p2align 5
+	.p2align 4
+	.p2align 3
+.L8:
+	vmovups	(%rsi,%rcx), %ymm0
+	vfmadd213ps	(%rax,%rcx), %ymm1, %ymm0
+	vmovups	%ymm0, (%rax,%rcx)
+	addq	$32, %rcx
+	cmpq	%rcx, %rdx
+	jne	.L8
+	movl	%r9d, %esi
+	cmpl	%r15d, %r9d
+	je	.L11
+	cmpl	$2, 48(%rsp)
+	movl	52(%rsp), %edi
+	movl	%r9d, %ecx
+	jbe	.L10
+.L7:
+	movq	56(%rsp), %r12
+	vbroadcastss	%xmm2, %xmm0
+	addq	%rsi, %r12
+	addq	%r8, %rsi
+	vmovups	0(%r13,%r12,4), %xmm3
+	vfmadd132ps	(%rbx,%rsi,4), %xmm3, %xmm0
+	movl	%edi, %esi
+	andl	$-4, %esi
+	andl	$3, %edi
+	vmovups	%xmm0, 0(%r13,%r12,4)
+	je	.L11
+	addl	%esi, %ecx
+.L10:
+	movl	80(%rsp), %r12d
+	leal	(%r11,%rcx), %edi
+	vmovss	(%rbx,%rdi,4), %xmm0
+	leal	(%r12,%rcx), %esi
+	vfmadd213ss	0(%r13,%rsi,4), %xmm2, %xmm0
+	vmovss	%xmm0, 0(%r13,%rsi,4)
+	leal	1(%rcx), %esi
+	cmpl	%esi, %r15d
+	jle	.L11
+	leal	(%r12,%rsi), %edi
+	addl	%r11d, %esi
+	addl	$2, %ecx
+	movl	%esi, %esi
+	vmovss	(%rbx,%rsi,4), %xmm0
+	vfmadd213ss	0(%r13,%rdi,4), %xmm2, %xmm0
+	vmovss	%xmm0, 0(%r13,%rdi,4)
+	cmpl	%ecx, %r15d
+	jle	.L11
+	leal	(%r12,%rcx), %esi
+	addl	%r11d, %ecx
+	addq	$4, %r10
+	vmovss	0(%r13,%rsi,4), %xmm4
+	movl	%ecx, %ecx
+	vfmadd132ss	(%rbx,%rcx,4), %xmm4, %xmm2
+	vmovss	%xmm2, 0(%r13,%rsi,4)
+	cmpq	88(%rsp), %r10
+	je	.L38
+.L42:
+	addq	64(%rsp), %r8
+	vmovss	(%r10), %xmm2
+	movl	%r8d, %r11d
+	jmp	.L6
+	.p2align 4
+	.p2align 3
+.L11:
+	addq	$4, %r10
+	cmpq	88(%rsp), %r10
+	jne	.L42
+.L38:
+	movl	28(%rsp), %edi
+	movq	40(%rsp), %rsi
+	addl	%r15d, 80(%rsp)
+	addq	%rsi, 88(%rsp)
+	incl	%edi
+	cmpl	%edi, %r14d
+	jne	.L4
+	vzeroupper
+.L1:
+	movq	8(%rsp), %rax
+	leaq	-40(%rbp), %rsp
+	popq	%rbx
+	popq	%r12
+	popq	%r13
+	popq	%r14
+	popq	%r15
+	popq	%rbp
+	.cfi_remember_state
+	.cfi_def_cfa 7, 8
+	ret
+	.p2align 4
+	.p2align 3
+.L47:
+	.cfi_restore_state
+	leaq	0(,%r8,4), %rdi
+.L5:
+	movq	32(%rsp), %rsi
+	addq	%rbx, %rdi
+	xorl	%ecx, %ecx
+	.p2align 5
+	.p2align 4
+	.p2align 3
+.L16:
+	vmovss	(%rdi,%rcx), %xmm0
+	vfmadd213ss	(%rax,%rcx), %xmm2, %xmm0
+	vmovss	%xmm0, (%rax,%rcx)
+	addq	$4, %rcx
+	cmpq	%rcx, %rsi
+	jne	.L16
+	addq	64(%rsp), %r8
+	addq	$4, %r10
+	cmpq	88(%rsp), %r10
+	jne	.L19
+	jmp	.L38
+.L22:
+	movl	%r15d, %edi
+	xorl	%esi, %esi
+	xorl	%ecx, %ecx
+	jmp	.L7
+.L23:
+	movq	%rax, %rbx
+	jmp	.L20
+	.section	.gcc_except_table,"a",@progbits
+.LLSDA3449:
+	.byte	0xff
+	.byte	0xff
+	.byte	0x1
+	.uleb128 .LLSDACSE3449-.LLSDACSB3449
+.LLSDACSB3449:
+	.uleb128 .LEHB0-.LFB3449
+	.uleb128 .LEHE0-.LEHB0
+	.uleb128 0
+	.uleb128 0
+	.uleb128 .LEHB1-.LFB3449
+	.uleb128 .LEHE1-.LEHB1
+	.uleb128 .L23-.LFB3449
+	.uleb128 0
+.LLSDACSE3449:
+	.text
+	.cfi_endproc
+	.section	.text.unlikely
+	.cfi_startproc
+	.cfi_personality 0x9b,DW.ref.__gxx_personality_v0
+	.cfi_lsda 0x1b,.LLSDAC3449
+	.type	_Z4GemmR6TensorS0_.cold, @function
+_Z4GemmR6TensorS0_.cold:
+.LFSB3449:
+.L31:
+	.cfi_def_cfa 6, 16
+	.cfi_offset 3, -56
+	.cfi_offset 6, -16
+	.cfi_offset 12, -48
+	.cfi_offset 13, -40
+	.cfi_offset 14, -32
+	.cfi_offset 15, -24
+	leaq	.LC0(%rip), %rcx
+	movl	$13, %edx
+	leaq	.LC1(%rip), %rsi
+	leaq	.LC2(%rip), %rdi
+	call	__assert_fail@PLT
+.L20:
+	movq	8(%rsp), %rax
+	movq	(%rax), %rdi
+	testq	%rdi, %rdi
+	je	.L40
+	movq	16(%rax), %rsi
+	subq	%rdi, %rsi
+	vzeroupper
+	call	_ZdlPvm@PLT
+.L21:
+	movq	%rbx, %rdi
+.LEHB2:
+	call	_Unwind_Resume@PLT
+.LEHE2:
+.L40:
+	vzeroupper
+	jmp	.L21
+	.cfi_endproc
+.LFE3449:
+	.section	.gcc_except_table
+.LLSDAC3449:
+	.byte	0xff
+	.byte	0xff
+	.byte	0x1
+	.uleb128 .LLSDACSEC3449-.LLSDACSBC3449
+.LLSDACSBC3449:
+	.uleb128 .LEHB2-.LCOLDB3
+	.uleb128 .LEHE2-.LEHB2
+	.uleb128 0
+	.uleb128 0
+.LLSDACSEC3449:
+	.section	.text.unlikely
+	.text
+	.size	_Z4GemmR6TensorS0_, .-_Z4GemmR6TensorS0_
+	.section	.text.unlikely
+	.size	_Z4GemmR6TensorS0_.cold, .-_Z4GemmR6TensorS0_.cold
+.LCOLDE3:
+	.text
+.LHOTE3:
+	.section	.rodata.str1.8
+	.align 8
+.LC5:
+	.string	"Tensor Gemm_ijk(Tensor&, Tensor&)"
+	.section	.text.unlikely
+.LCOLDB6:
+	.text
+.LHOTB6:
+	.p2align 4
+	.globl	_Z8Gemm_ijkR6TensorS0_
+	.type	_Z8Gemm_ijkR6TensorS0_, @function
+_Z8Gemm_ijkR6TensorS0_:
+.LFB3478:
+	.cfi_startproc
+	.cfi_personality 0x9b,DW.ref.__gxx_personality_v0
+	.cfi_lsda 0x1b,.LLSDA3478
+	pushq	%r15
+	.cfi_def_cfa_offset 16
+	.cfi_offset 15, -16
+	pushq	%r14
+	.cfi_def_cfa_offset 24
+	.cfi_offset 14, -24
+	pushq	%r13
+	.cfi_def_cfa_offset 32
+	.cfi_offset 13, -32
+	movq	%rdi, %r14
+	pushq	%r12
+	.cfi_def_cfa_offset 40
+	.cfi_offset 12, -40
+	pushq	%rbp
+	.cfi_def_cfa_offset 48
+	.cfi_offset 6, -48
+	pushq	%rbx
+	.cfi_def_cfa_offset 56
+	.cfi_offset 3, -56
+	movq	%rdx, %r12
+	subq	$56, %rsp
+	.cfi_def_cfa_offset 112
+	movq	%rsi, %rdi
+	movq	%rsi, %rbx
+.LEHB3:
+	call	_ZN6Tensor4dataEv@PLT
+	movq	%r12, %rdi
+	movq	%rax, %rbp
+	call	_ZN6Tensor4dataEv@PLT
+	movq	%rbx, %rdi
+	movq	%rax, 8(%rsp)
+	call	_ZN6Tensor4growEv@PLT
+	movq	%rbx, %rdi
+	movl	%eax, 20(%rsp)
+	call	_ZN6Tensor4gcolEv@PLT
+	movq	%r12, %rdi
+	movl	%eax, %ebx
+	call	_ZN6Tensor4growEv@PLT
+	movq	%r12, %rdi
+	movl	%eax, %r13d
+	call	_ZN6Tensor4gcolEv@PLT
+	cmpl	%r13d, %ebx
+	jne	.L69
+	movl	20(%rsp), %r15d
+	movq	%r14, %rdi
+	movl	%eax, %edx
+	movl	%eax, %r12d
+	movl	%r15d, %esi
+	call	_ZN6TensorC1Eii@PLT
+.LEHE3:
+	movq	%r14, %rdi
+.LEHB4:
+	call	_ZN6Tensor4dataEv@PLT
+.LEHE4:
+	testl	%r15d, %r15d
+	jle	.L48
+	testl	%r12d, %r12d
+	jle	.L48
+	movl	%ebx, %r11d
+	movl	%r12d, %ecx
+	movl	%r12d, 16(%rsp)
+	movq	8(%rsp), %r12
+	shrl	%r11d
+	movq	%rax, %r13
+	leaq	0(,%rcx,4), %rdx
+	leaq	0(,%rcx,8), %rdi
+	movl	%r11d, %eax
+	movq	%rdx, 24(%rsp)
+	addl	%r11d, %r11d
+	xorl	%edx, %edx
+	salq	$3, %rax
+	xorl	%esi, %esi
+	movq	%r14, 40(%rsp)
+	movq	%rax, 32(%rsp)
+	.p2align 4
+	.p2align 3
+.L51:
+	testl	%ebx, %ebx
+	jle	.L62
+	movslq	%edx, %rax
+	movq	%r12, %r10
+	xorl	%r14d, %r14d
+	xorl	%r9d, %r9d
+	leaq	0(%rbp,%rax,4), %r15
+	movq	32(%rsp), %rax
+	movl	%esi, 8(%rsp)
+	leaq	(%rax,%r15), %r8
+	cmpl	$1, %ebx
+	je	.L61
+	.p2align 4
+	.p2align 3
+.L56:
+	movq	%r15, %rsi
+	movq	%r10, %rax
+	vxorps	%xmm1, %xmm1, %xmm1
+	.p2align 6
+	.p2align 4
+	.p2align 3
+.L53:
+	vmovss	(%rax), %xmm0
+	vmovq	(%rsi), %xmm2
+	addq	$8, %rsi
+	vinsertps	$0x10, (%rax,%rcx,4), %xmm0, %xmm0
+	addq	%rdi, %rax
+	vmovq	%xmm0, %xmm0
+	vmulps	%xmm2, %xmm0, %xmm0
+	vaddss	%xmm0, %xmm1, %xmm1
+	vmovshdup	%xmm0, %xmm0
+	vaddss	%xmm1, %xmm0, %xmm1
+	cmpq	%rsi, %r8
+	jne	.L53
+	cmpl	%r11d, %ebx
+	je	.L54
+	movl	%r11d, %eax
+.L52:
+	movl	16(%rsp), %esi
+	imull	%eax, %esi
+	addl	%edx, %eax
+	movl	%eax, %eax
+	addl	%r14d, %esi
+	movl	%esi, %esi
+	vmovss	(%r12,%rsi,4), %xmm3
+	vfmadd231ss	0(%rbp,%rax,4), %xmm3, %xmm1
+	vmovss	%xmm1, 0(%r13,%r9,4)
+	incq	%r9
+	cmpq	%r9, %rcx
+	je	.L71
+	addq	$4, %r10
+	movl	%r9d, %r14d
+	cmpl	$1, %ebx
+	jne	.L56
+.L61:
+	xorl	%eax, %eax
+	vxorps	%xmm1, %xmm1, %xmm1
+	jmp	.L52
+	.p2align 4
+	.p2align 3
+.L54:
+	vmovss	%xmm1, 0(%r13,%r9,4)
+	incq	%r9
+	cmpq	%r9, %rcx
+	je	.L71
+	addq	$4, %r10
+	movl	%r9d, %r14d
+	jmp	.L56
+	.p2align 4
+	.p2align 3
+.L71:
+	movl	8(%rsp), %esi
+.L55:
+	addq	24(%rsp), %r13
+	incl	%esi
+	addl	%ebx, %edx
+	cmpl	%esi, 20(%rsp)
+	jne	.L51
+	movq	40(%rsp), %r14
+.L48:
+	addq	$56, %rsp
+	.cfi_remember_state
+	.cfi_def_cfa_offset 56
+	movq	%r14, %rax
+	popq	%rbx
+	.cfi_def_cfa_offset 48
+	popq	%rbp
+	.cfi_def_cfa_offset 40
+	popq	%r12
+	.cfi_def_cfa_offset 32
+	popq	%r13
+	.cfi_def_cfa_offset 24
+	popq	%r14
+	.cfi_def_cfa_offset 16
+	popq	%r15
+	.cfi_def_cfa_offset 8
+	ret
+.L62:
+	.cfi_restore_state
+	xorl	%eax, %eax
+.L58:
+	leaq	1(%rax), %r8
+	movl	$0x00000000, 0(%r13,%rax,4)
+	cmpq	%rcx, %r8
+	je	.L55
+	addq	$2, %rax
+	movl	$0x00000000, 0(%r13,%r8,4)
+	cmpq	%rax, %rcx
+	jne	.L58
+	jmp	.L55
+.L63:
+	movq	%rax, %rbx
+	jmp	.L59
+	.section	.gcc_except_table
+.LLSDA3478:
+	.byte	0xff
+	.byte	0xff
+	.byte	0x1
+	.uleb128 .LLSDACSE3478-.LLSDACSB3478
+.LLSDACSB3478:
+	.uleb128 .LEHB3-.LFB3478
+	.uleb128 .LEHE3-.LEHB3
+	.uleb128 0
+	.uleb128 0
+	.uleb128 .LEHB4-.LFB3478
+	.uleb128 .LEHE4-.LEHB4
+	.uleb128 .L63-.LFB3478
+	.uleb128 0
+.LLSDACSE3478:
+	.text
+	.cfi_endproc
+	.section	.text.unlikely
+	.cfi_startproc
+	.cfi_personality 0x9b,DW.ref.__gxx_personality_v0
+	.cfi_lsda 0x1b,.LLSDAC3478
+	.type	_Z8Gemm_ijkR6TensorS0_.cold, @function
+_Z8Gemm_ijkR6TensorS0_.cold:
+.LFSB3478:
+.L69:
+	.cfi_def_cfa_offset 112
+	.cfi_offset 3, -56
+	.cfi_offset 6, -48
+	.cfi_offset 12, -40
+	.cfi_offset 13, -32
+	.cfi_offset 14, -24
+	.cfi_offset 15, -16
+	leaq	.LC5(%rip), %rcx
+	movl	$35, %edx
+	leaq	.LC1(%rip), %rsi
+	leaq	.LC2(%rip), %rdi
+	call	__assert_fail@PLT
+.L59:
+	movq	(%r14), %rdi
+	testq	%rdi, %rdi
+	je	.L74
+	movq	16(%r14), %rsi
+	subq	%rdi, %rsi
+	vzeroupper
+	call	_ZdlPvm@PLT
+.L60:
+	movq	%rbx, %rdi
+.LEHB5:
+	call	_Unwind_Resume@PLT
+.LEHE5:
+.L74:
+	vzeroupper
+	jmp	.L60
+	.cfi_endproc
+.LFE3478:
+	.section	.gcc_except_table
+.LLSDAC3478:
+	.byte	0xff
+	.byte	0xff
+	.byte	0x1
+	.uleb128 .LLSDACSEC3478-.LLSDACSBC3478
+.LLSDACSBC3478:
+	.uleb128 .LEHB5-.LCOLDB6
+	.uleb128 .LEHE5-.LEHB5
+	.uleb128 0
+	.uleb128 0
+.LLSDACSEC3478:
+	.section	.text.unlikely
+	.text
+	.size	_Z8Gemm_ijkR6TensorS0_, .-_Z8Gemm_ijkR6TensorS0_
+	.section	.text.unlikely
+	.size	_Z8Gemm_ijkR6TensorS0_.cold, .-_Z8Gemm_ijkR6TensorS0_.cold
+.LCOLDE6:
+	.text
+.LHOTE6:
+	.section	.rodata.str1.8
+	.align 8
+.LC7:
+	.string	"Tensor Gemm_tiled(Tensor&, Tensor&, int)"
+	.section	.text.unlikely
+.LCOLDB8:
+	.text
+.LHOTB8:
+	.p2align 4
+	.globl	_Z10Gemm_tiledR6TensorS0_i
+	.type	_Z10Gemm_tiledR6TensorS0_i, @function
+_Z10Gemm_tiledR6TensorS0_i:
+.LFB3479:
+	.cfi_startproc
+	.cfi_personality 0x9b,DW.ref.__gxx_personality_v0
+	.cfi_lsda 0x1b,.LLSDA3479
+	pushq	%rbp
+	.cfi_def_cfa_offset 16
+	.cfi_offset 6, -16
+	movq	%rsp, %rbp
+	.cfi_def_cfa_register 6
+	pushq	%r15
+	pushq	%r14
+	pushq	%r13
+	pushq	%r12
+	pushq	%rbx
+	.cfi_offset 15, -24
+	.cfi_offset 14, -32
+	.cfi_offset 13, -40
+	.cfi_offset 12, -48
+	.cfi_offset 3, -56
+	movq	%rdx, %r12
+	movq	%rsi, %r13
+	andq	$-32, %rsp
+	subq	$256, %rsp
+	movq	%rdi, 104(%rsp)
+	movq	%rsi, %rdi
+	movl	%ecx, 152(%rsp)
+.LEHB6:
+	call	_ZN6Tensor4dataEv@PLT
+	movq	%r12, %rdi
+	movq	%rax, 56(%rsp)
+	call	_ZN6Tensor4dataEv@PLT
+	movq	%r13, %rdi
+	movq	%rax, 224(%rsp)
+	call	_ZN6Tensor4growEv@PLT
+	movq	%r12, %rdi
+	movl	%eax, 244(%rsp)
+	call	_ZN6Tensor4growEv@PLT
+	movq	%r13, %rdi
+	movl	%eax, %ebx
+	call	_ZN6Tensor4gcolEv@PLT
+	movq	%r12, %rdi
+	movl	%eax, 248(%rsp)
+	call	_ZN6Tensor4gcolEv@PLT
+	movl	248(%rsp), %r10d
+	movl	%eax, 176(%rsp)
+	cmpl	%r10d, %ebx
+	jne	.L105
+	movl	244(%rsp), %r9d
+	movq	104(%rsp), %r14
+	movl	%eax, %edx
+	movl	%eax, %ebx
+	movl	%r10d, 244(%rsp)
+	movq	%r14, %rdi
+	movl	%r9d, %esi
+	movl	%r9d, 248(%rsp)
+	call	_ZN6TensorC1Eii@PLT
+.LEHE6:
+	movq	%r14, %rdi
+.LEHB7:
+	call	_ZN6Tensor4dataEv@PLT
+.LEHE7:
+	movl	248(%rsp), %r9d
+	movq	%rax, %r15
+	testl	%r9d, %r9d
+	jle	.L76
+	testl	%ebx, %ebx
+	jle	.L76
+	movl	244(%rsp), %r10d
+	testl	%r10d, %r10d
+	jle	.L76
+	movl	152(%rsp), %edi
+	movl	%ebx, %ecx
+	xorl	%edx, %edx
+	movl	$0, 96(%rsp)
+	movl	$0, 100(%rsp)
+	imull	%edi, %ecx
+	movl	%edi, %esi
+	imull	%r10d, %esi
+	movslq	%ecx, %rax
+	movq	%rax, 80(%rsp)
+	movl	%r10d, %eax
+	salq	$2, %rax
+	movq	%rax, 136(%rsp)
+	movl	%ebx, %eax
+	leaq	0(,%rax,4), %r14
+	movq	%rax, 216(%rsp)
+	movslq	%edi, %rax
+	movq	%rax, 88(%rsp)
+	movq	$-4, %rax
+	subq	224(%rsp), %rax
+	movq	%rax, 120(%rsp)
+	movq	%r15, %rax
+	movq	%r14, %r15
+	movq	%rax, %r14
+.L79:
+	movl	100(%rsp), %edi
+	movl	152(%rsp), %eax
+	movl	%r9d, %ebx
+	addl	%edi, %eax
+	cmpl	%r9d, %eax
+	cmovle	%eax, %ebx
+	movl	%ebx, 156(%rsp)
+	cmpl	%edi, %ebx
+	jle	.L90
+	movslq	%edx, %rbx
+	movl	%r10d, %edi
+	movq	%r14, %r12
+	movl	%ecx, 72(%rsp)
+	movq	%rbx, 64(%rsp)
+	movl	%esi, 52(%rsp)
+	movl	%edx, 48(%rsp)
+	xorl	%r10d, %r10d
+	movl	%eax, 44(%rsp)
+	movq	%r15, %r14
+.L91:
+	movl	152(%rsp), %eax
+	movl	%r10d, 184(%rsp)
+	movl	%r10d, 196(%rsp)
+	movl	%r10d, 76(%rsp)
+	movq	%r10, 168(%rsp)
+	movl	176(%rsp), %ebx
+	addl	%r10d, %eax
+	movl	%eax, %ecx
+	cmpl	%ebx, %eax
+	cmovg	%ebx, %ecx
+	movl	%ecx, 212(%rsp)
+	subl	%r10d, %ecx
+	leal	-1(%rcx), %eax
+	movl	%ecx, 208(%rsp)
+	movl	%eax, 240(%rsp)
+	movl	%ecx, %eax
+	leaq	0(,%rax,4), %r13
+	movl	%ecx, %eax
+	shrl	$3, %eax
+	leal	0(,%rax,8), %ebx
+	movl	%eax, %edx
+	subl	%ebx, %ecx
+	salq	$5, %rdx
+	leal	-1(%rcx), %eax
+	movl	%ecx, 192(%rsp)
+	movq	%rdx, %r11
+	xorl	%ecx, %ecx
+	movl	%eax, 188(%rsp)
+.L89:
+	movl	152(%rsp), %eax
+	addl	%ecx, %eax
+	cmpl	%edi, %eax
+	cmovg	%edi, %eax
+	cmpl	%ecx, %eax
+	jle	.L80
+	movl	76(%rsp), %esi
+	cmpl	%esi, 212(%rsp)
+	jle	.L80
+	movl	%eax, %edx
+	movq	64(%rsp), %rax
+	movq	56(%rsp), %rsi
+	movq	%rcx, 32(%rsp)
+	subl	%ecx, %edx
+	movq	%r10, 160(%rsp)
+	movl	%r9d, 40(%rsp)
+	movl	%edi, 28(%rsp)
+	addq	%rcx, %rax
+	addq	%rdx, %rax
+	leaq	(%rsi,%rax,4), %rax
+	movl	100(%rsp), %esi
+	movq	%rax, 232(%rsp)
+	movq	%rdx, %rax
+	movq	224(%rsp), %rdx
+	negq	%rax
+	leaq	0(,%rax,4), %r15
+	movq	168(%rsp), %rax
+	movq	%r15, 112(%rsp)
+	leaq	(%rdx,%rax,4), %rdx
+	movq	%rdx, 144(%rsp)
+	movl	96(%rsp), %edx
+	movl	%edx, 244(%rsp)
+	movq	%r10, %rdx
+	subq	%rax, %rdx
+	movq	%rdx, 128(%rsp)
+	.p2align 4
+	.p2align 3
+.L81:
+	movq	232(%rsp), %rax
+	movl	%esi, 180(%rsp)
+	movq	112(%rsp), %rdi
+	movq	128(%rsp), %rdx
+	movq	168(%rsp), %r8
+	addq	%rax, %rdi
+	movslq	244(%rsp), %rax
+	addq	%rax, %rdx
+	addq	160(%rsp), %rax
+	leaq	(%r12,%rdx,4), %r9
+	addq	120(%rsp), %r9
+	movq	144(%rsp), %rdx
+	movq	%rax, 200(%rsp)
+	leaq	(%r12,%rax,4), %rax
+	movq	%rax, 248(%rsp)
+	.p2align 4
+	.p2align 3
+.L88:
+	vmovss	(%rdi), %xmm2
+	movl	240(%rsp), %esi
+	vbroadcastss	%xmm2, %ymm3
+	cmpl	$2, %esi
+	jbe	.L95
+	cmpq	$24, %r9
+	jbe	.L95
+	cmpl	$6, %esi
+	jbe	.L96
+	movq	248(%rsp), %rax
+	vmovaps	%ymm3, %ymm1
+	xorl	%ecx, %ecx
+	.p2align 5
+	.p2align 4
+	.p2align 3
+.L84:
+	vmovups	(%rdx,%rcx), %ymm0
+	vfmadd213ps	(%rax,%rcx), %ymm1, %ymm0
+	vmovups	%ymm0, (%rax,%rcx)
+	addq	$32, %rcx
+	cmpq	%rcx, %r11
+	jne	.L84
+	movq	%rax, 248(%rsp)
+	movl	%ebx, %esi
+	cmpl	%ebx, 208(%rsp)
+	je	.L85
+	cmpl	$2, 188(%rsp)
+	movl	196(%rsp), %eax
+	movl	192(%rsp), %r10d
+	leal	(%rbx,%rax), %ecx
+	movq	224(%rsp), %rax
+	jbe	.L86
+.L83:
+	movq	200(%rsp), %rax
+	leaq	(%rax,%rsi), %r15
+	movq	224(%rsp), %rax
+	addq	%r8, %rsi
+	vmovups	(%r12,%r15,4), %xmm4
+	vfmadd132ps	(%rax,%rsi,4), %xmm4, %xmm3
+	movl	%r10d, %esi
+	andl	$-4, %esi
+	andl	$3, %r10d
+	vmovups	%xmm3, (%r12,%r15,4)
+	je	.L85
+	addl	%esi, %ecx
+.L86:
+	movl	244(%rsp), %esi
+	movl	%r8d, %r10d
+	subl	184(%rsp), %r10d
+	addl	%ecx, %esi
+	movslq	%esi, %rsi
+	leaq	(%r12,%rsi,4), %r15
+	leal	(%r10,%rcx), %esi
+	movslq	%esi, %rsi
+	vmovss	(%rax,%rsi,4), %xmm0
+	leal	1(%rcx), %esi
+	vfmadd213ss	(%r15), %xmm2, %xmm0
+	vmovss	%xmm0, (%r15)
+	cmpl	%esi, 212(%rsp)
+	jle	.L85
+	movl	244(%rsp), %r15d
+	addl	$2, %ecx
+	addl	%esi, %r15d
+	addl	%r10d, %esi
+	movslq	%esi, %rsi
+	movslq	%r15d, %r15
+	vmovss	(%rax,%rsi,4), %xmm0
+	vfmadd213ss	(%r12,%r15,4), %xmm2, %xmm0
+	vmovss	%xmm0, (%r12,%r15,4)
+	cmpl	%ecx, 212(%rsp)
+	jle	.L85
+	movl	244(%rsp), %r15d
+	addl	%ecx, %r10d
+	movslq	%r10d, %r10
+	leal	(%r15,%rcx), %esi
+	movslq	%esi, %rsi
+	vmovss	(%r12,%rsi,4), %xmm5
+	vfmadd132ss	(%rax,%r10,4), %xmm5, %xmm2
+	vmovss	%xmm2, (%r12,%rsi,4)
+.L85:
+	addq	216(%rsp), %r8
+	addq	$4, %rdi
+	addq	%r14, %rdx
+	subq	%r14, %r9
+	cmpq	232(%rsp), %rdi
+	jne	.L88
+	movl	180(%rsp), %esi
+	movl	176(%rsp), %edi
+	addl	%edi, 244(%rsp)
+	movq	136(%rsp), %rdi
+	addq	%rdi, 232(%rsp)
+	incl	%esi
+	cmpl	156(%rsp), %esi
+	jne	.L81
+	movq	32(%rsp), %rcx
+	movq	160(%rsp), %r10
+	movl	40(%rsp), %r9d
+	movl	28(%rsp), %edi
+.L80:
+	movq	88(%rsp), %rax
+	movq	80(%rsp), %rdx
+	addq	%rdx, 168(%rsp)
+	addq	%rax, %rcx
+	cmpl	%ecx, %edi
+	jg	.L89
+	addq	%rax, %r10
+	cmpl	%r10d, 176(%rsp)
+	jg	.L91
+	movl	72(%rsp), %ecx
+	movl	52(%rsp), %esi
+	movq	%r14, %r15
+	movl	%edi, %r10d
+	movl	48(%rsp), %edx
+	movl	44(%rsp), %eax
+	movq	%r12, %r14
+.L90:
+	addl	%ecx, 96(%rsp)
+	movl	%eax, 100(%rsp)
+	addl	%esi, %edx
+	cmpl	%eax, %r9d
+	jg	.L79
+	vzeroupper
+.L76:
+	movq	104(%rsp), %rax
+	leaq	-40(%rbp), %rsp
+	popq	%rbx
+	popq	%r12
+	popq	%r13
+	popq	%r14
+	popq	%r15
+	popq	%rbp
+	.cfi_remember_state
+	.cfi_def_cfa 7, 8
+	ret
+	.p2align 4
+	.p2align 3
+.L95:
+	.cfi_restore_state
+	movq	248(%rsp), %rax
+	xorl	%ecx, %ecx
+	.p2align 5
+	.p2align 4
+	.p2align 3
+.L87:
+	vmovss	(%rdx,%rcx), %xmm0
+	vfmadd213ss	(%rax,%rcx), %xmm2, %xmm0
+	vmovss	%xmm0, (%rax,%rcx)
+	addq	$4, %rcx
+	cmpq	%r13, %rcx
+	jne	.L87
+	movq	%rax, 248(%rsp)
+	jmp	.L85
+.L96:
+	movl	208(%rsp), %r10d
+	movl	196(%rsp), %ecx
+	xorl	%esi, %esi
+	jmp	.L83
+.L97:
+	movq	%rax, %rbx
+	jmp	.L92
+	.section	.gcc_except_table
+.LLSDA3479:
+	.byte	0xff
+	.byte	0xff
+	.byte	0x1
+	.uleb128 .LLSDACSE3479-.LLSDACSB3479
+.LLSDACSB3479:
+	.uleb128 .LEHB6-.LFB3479
+	.uleb128 .LEHE6-.LEHB6
+	.uleb128 0
+	.uleb128 0
+	.uleb128 .LEHB7-.LFB3479
+	.uleb128 .LEHE7-.LEHB7
+	.uleb128 .L97-.LFB3479
+	.uleb128 0
+.LLSDACSE3479:
+	.text
+	.cfi_endproc
+	.section	.text.unlikely
+	.cfi_startproc
+	.cfi_personality 0x9b,DW.ref.__gxx_personality_v0
+	.cfi_lsda 0x1b,.LLSDAC3479
+	.type	_Z10Gemm_tiledR6TensorS0_i.cold, @function
+_Z10Gemm_tiledR6TensorS0_i.cold:
+.LFSB3479:
+.L105:
+	.cfi_def_cfa 6, 16
+	.cfi_offset 3, -56
+	.cfi_offset 6, -16
+	.cfi_offset 12, -48
+	.cfi_offset 13, -40
+	.cfi_offset 14, -32
+	.cfi_offset 15, -24
+	leaq	.LC7(%rip), %rcx
+	movl	$56, %edx
+	leaq	.LC1(%rip), %rsi
+	leaq	.LC2(%rip), %rdi
+	call	__assert_fail@PLT
+.L92:
+	movq	104(%rsp), %rax
+	movq	(%rax), %rdi
+	testq	%rdi, %rdi
+	je	.L110
+	movq	16(%rax), %rsi
+	subq	%rdi, %rsi
+	vzeroupper
+	call	_ZdlPvm@PLT
+.L93:
+	movq	%rbx, %rdi
+.LEHB8:
+	call	_Unwind_Resume@PLT
+.LEHE8:
+.L110:
+	vzeroupper
+	jmp	.L93
+	.cfi_endproc
+.LFE3479:
+	.section	.gcc_except_table
+.LLSDAC3479:
+	.byte	0xff
+	.byte	0xff
+	.byte	0x1
+	.uleb128 .LLSDACSEC3479-.LLSDACSBC3479
+.LLSDACSBC3479:
+	.uleb128 .LEHB8-.LCOLDB8
+	.uleb128 .LEHE8-.LEHB8
+	.uleb128 0
+	.uleb128 0
+.LLSDACSEC3479:
+	.section	.text.unlikely
+	.text
+	.size	_Z10Gemm_tiledR6TensorS0_i, .-_Z10Gemm_tiledR6TensorS0_i
+	.section	.text.unlikely
+	.size	_Z10Gemm_tiledR6TensorS0_i.cold, .-_Z10Gemm_tiledR6TensorS0_i.cold
+.LCOLDE8:
+	.text
+.LHOTE8:
+	.hidden	DW.ref.__gxx_personality_v0
+	.weak	DW.ref.__gxx_personality_v0
+	.section	.data.rel.local.DW.ref.__gxx_personality_v0,"awG",@progbits,DW.ref.__gxx_personality_v0,comdat
+	.align 8
+	.type	DW.ref.__gxx_personality_v0, @object
+	.size	DW.ref.__gxx_personality_v0, 8
+DW.ref.__gxx_personality_v0:
+	.quad	__gxx_personality_v0
+	.globl	__gxx_personality_v0
+	.ident	"GCC: (GNU) 16.1.1 20260430"
+	.section	.note.GNU-stack,"",@progbits

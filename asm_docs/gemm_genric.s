@@ -1,0 +1,108 @@
+//after first tiling result
+//❯ grep -i ymm GEMM.s
+//nothing 
+//gcc is not doing avx 256 instructions maybe we should do them ourselves 
+
+//❯ grep -i xmm GEMM.s
+	movss	(%rdi), %xmm2
+	movaps	%xmm2, %xmm1
+	shufps	$0, %xmm1, %xmm1
+	movups	(%r8,%rsi), %xmm0
+	movups	(%rax,%rsi), %xmm3
+	mulps	%xmm1, %xmm0
+	addps	%xmm3, %xmm0
+	movups	%xmm0, (%rax,%rsi)
+	movaps	%xmm2, %xmm1
+	shufps	$0xe0, %xmm1, %xmm1
+	movq	%xmm1, %xmm1
+	movq	(%rbx,%rsi,4), %xmm0
+	mulps	%xmm1, %xmm0
+	movq	0(%rbp,%r12,4), %xmm1
+	movq	%xmm0, %xmm0
+	addps	%xmm1, %xmm0
+	movlps	%xmm0, 0(%rbp,%r12,4)
+	mulss	(%rbx,%r8,4), %xmm2
+	addss	0(%rbp,%rsi,4), %xmm2
+	movss	%xmm2, 0(%rbp,%rsi,4)
+	movss	(%rdi), %xmm2
+	movss	(%r8,%rsi), %xmm0
+	mulss	%xmm2, %xmm0
+	addss	(%rax,%rsi), %xmm0
+	movss	%xmm0, (%rax,%rsi)
+	pxor	%xmm1, %xmm1
+	movss	(%rdi,%rcx), %xmm0
+	movss	(%rdi,%rax,8), %xmm2
+	movss	(%rdi,%rax,4), %xmm3
+	movups	-16(%r9), %xmm4
+	unpcklps	%xmm0, %xmm2
+	movss	(%rdi), %xmm0
+	unpcklps	%xmm3, %xmm0
+	movlhps	%xmm2, %xmm0
+	mulps	%xmm4, %xmm0
+	addss	%xmm0, %xmm1
+	movaps	%xmm0, %xmm2
+	shufps	$85, %xmm0, %xmm2
+	addss	%xmm1, %xmm2
+	movaps	%xmm0, %xmm1
+	unpckhps	%xmm0, %xmm1
+	shufps	$255, %xmm0, %xmm0
+	addss	%xmm2, %xmm1
+	addss	%xmm0, %xmm1
+	movss	(%r15,%r10,4), %xmm0
+	mulss	(%r12,%r14,4), %xmm0
+	addss	%xmm1, %xmm0
+	movss	(%r15,%r14,4), %xmm1
+	mulss	(%r12,%r10,4), %xmm1
+	addss	%xmm0, %xmm1
+	movss	(%r12,%r9,4), %xmm0
+	mulss	(%r15,%rdi,4), %xmm0
+	addss	%xmm1, %xmm0
+	movss	%xmm0, (%rbx,%r8,4)
+	pxor	%xmm1, %xmm1
+	movss	%xmm1, (%rbx,%r8,4)
+	movss	%xmm1, (%rbx,%r8,4)
+	movss	(%rcx), %xmm2
+	movaps	%xmm2, %xmm3
+	shufps	$0, %xmm3, %xmm3
+	movaps	%xmm3, %xmm1
+	movups	(%r9,%rdx), %xmm0
+	movups	(%rax,%rdx), %xmm4
+	mulps	%xmm1, %xmm0
+	addps	%xmm4, %xmm0
+	movups	%xmm0, (%rax,%rdx)
+	movq	%xmm3, %xmm3
+	movq	(%r12,%rdx,4), %xmm0
+	movq	0(%rbp,%r11,4), %xmm1
+	mulps	%xmm3, %xmm0
+	movq	%xmm0, %xmm0
+	addps	%xmm1, %xmm0
+	movlps	%xmm0, 0(%rbp,%r11,4)
+	mulss	(%r12,%rdx,4), %xmm2
+	addss	(%r10), %xmm2
+	movss	%xmm2, (%r10)
+	movss	(%r9,%rdx,4), %xmm0
+	mulss	%xmm2, %xmm0
+	addss	(%rsi,%rdx,4), %xmm0
+	movss	%xmm0, (%rsi,%rdx,4)
+
+//-> mullss-> scalar float multiply 
+//-> addss-> scalar float add
+//-> mulps-> packed float multiply
+//-> addps-> packed float add
+
+//❯ grep -i ymm GEMM.s
+//nothing
+//❯ grep -i vfmadd GEMM.s
+//nothing
+//gcc is not even doing fused multiplication-add it should do it imagine the performance 
+//❯ grep -i mulss GEMM.s
+	mulss	(%rbx,%r8,4), %xmm2
+	mulss	%xmm2, %xmm0
+	mulss	(%r12,%r14,4), %xmm0
+	mulss	(%r12,%r10,4), %xmm1
+	mulss	(%r15,%rdi,4), %xmm0
+	mulss	(%r12,%rdx,4), %xmm2
+	mulss	%xmm2, %xmm0
+//❯ grep -i vmul GEMM.s
+//nothing
+//no avx needs to work 

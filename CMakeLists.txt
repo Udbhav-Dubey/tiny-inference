@@ -16,7 +16,9 @@ add_library(tensor
     src/tensor.cpp
     src/GEMM.cpp
 )
-
+target_compile_options(tensor PRIVATE
+    -march=native
+)
 target_include_directories(tensor PUBLIC
     ${CMAKE_SOURCE_DIR}/src
 )

@@ -44,18 +44,21 @@ int main(){
     run_multi(200,200,200,200,turn);
     run_multi(500,500,500,500,turn);
     run_multi(1000,1000,1000,1000,turn);
+    run_multi(2000,2000,2000,2000,turn);
     std::cout << "\nfor ikj \n";
     turn=0;
     run_multi(200,200,200,200,turn);
     run_multi(500,500,500,500,turn);
     run_multi(1000,1000,1000,1000,turn);
+    run_multi(2000,2000,2000,2000,turn);
     turn =2;
     int i=16;
-    while(i<=128){
+    while(i<=512){
     std::cout << "\nfor tiled "<< i <<"  block size \n";
     run_multi(200,200,200,200,turn,i);
     run_multi(500,500,500,500,turn,i);
     run_multi(1000,1000,1000,1000,turn,i);
+    run_multi(2000,2000,2000,2000,turn,i);
     i*=2;
     }
     return 0;
