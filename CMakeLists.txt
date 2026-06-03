@@ -15,6 +15,7 @@ add_compile_options(-Wall -Wextra -Wpedantic)
 add_library(tensor
     src/tensor.cpp
     src/GEMM.cpp
+    src/linear.cpp
 )
 target_compile_options(tensor PRIVATE
     -march=native
@@ -44,6 +45,10 @@ add_executable(test_gemm_ijk
 add_executable(test_gemm_tiled
     test/gemm_test3.cpp
 )
+add_executable(test_linear_1
+    test/linear_1.cpp
+)
+target_link_libraries(test_linear_1 PRIVATE tensor)
 target_link_libraries(test_gemm_tiled PRIVATE tensor)
 target_link_libraries(test_gemm_ijk PRIVATE tensor)
 target_link_libraries(benchmark_gemm1 PRIVATE tensor)

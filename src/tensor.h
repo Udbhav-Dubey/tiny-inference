@@ -22,8 +22,8 @@ class Tensor{
     void set_val(int i,int j,float value); 
     Tensor(const Tensor&)=delete;
     Tensor &operator=(const Tensor&)=delete;
-    int grow();
-    int gcol();
+    int grow()const;
+    int gcol()const;
     Tensor(Tensor&&)noexcept=default;
     Tensor&operator=(Tensor&&)noexcept=default;
     float*data();

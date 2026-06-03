@@ -59,10 +59,10 @@ void Tensor::set_val(int i,int j,float value){
     assert(temp<(size2d.first*size2d.second));
     mem_array[temp]=value;
 }
-int Tensor::grow(){
+int Tensor::grow()const{
     return size2d.first;
 }
-int Tensor::gcol(){
+int Tensor::gcol()const{
     return size2d.second;
 }
 float* Tensor::data(){
