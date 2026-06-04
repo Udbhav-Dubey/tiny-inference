@@ -68,3 +68,6 @@ int Tensor::gcol()const{
 float* Tensor::data(){
     return mem_array.data();
 }
+int Tensor::gsize()const{
+    return mem_array.size();
+}

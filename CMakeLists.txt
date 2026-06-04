@@ -16,6 +16,7 @@ add_library(tensor
     src/tensor.cpp
     src/GEMM.cpp
     src/linear.cpp
+    src/relu.cpp
 )
 target_compile_options(tensor PRIVATE
     -march=native
@@ -48,6 +49,14 @@ add_executable(test_gemm_tiled
 add_executable(test_linear_1
     test/linear_1.cpp
 )
+add_executable(test_relu_1
+    test/relu1.cpp
+)
+add_executable(test_linear_relu_1
+    test/linear_relu1.cpp
+)
+target_link_libraries(test_linear_relu_1 PRIVATE tensor)
+target_link_libraries(test_relu_1 PRIVATE tensor)
 target_link_libraries(test_linear_1 PRIVATE tensor)
 target_link_libraries(test_gemm_tiled PRIVATE tensor)
 target_link_libraries(test_gemm_ijk PRIVATE tensor)

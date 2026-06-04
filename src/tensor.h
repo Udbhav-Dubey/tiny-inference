@@ -24,7 +24,9 @@ class Tensor{
     Tensor &operator=(const Tensor&)=delete;
     int grow()const;
     int gcol()const;
+    int gsize()const;
     Tensor(Tensor&&)noexcept=default;
     Tensor&operator=(Tensor&&)noexcept=default;
     float*data();
+
 };

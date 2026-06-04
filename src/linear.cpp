@@ -3,7 +3,7 @@
 #include "GEMM.h"
 #include <cassert>
 Linear::Linear(int in,int out):in_feat{in},out_feat{out},Weight(in,out),bias(1,out_feat) {
-/* this initialization only for testing will remove with future modules
+// this initialization only for testing will remove with future modules
 
     float*w=Weight.data();
     for (int i=0;i<in_feat*out_feat;i++){
@@ -13,7 +13,7 @@ Linear::Linear(int in,int out):in_feat{in},out_feat{out},Weight(in,out),bias(1,o
     for (int i=0;i<out_feat;i++){
         b[i]=1.0f;
     }
-    */
+  //  */
 }
 Tensor Linear::forward(Tensor&input){
     int in_row=input.grow();
