@@ -1,6 +1,7 @@
 #pragma once 
 #include "tensor.h"
-class Linear{
+#include "Layer.h"
+class Linear:public Layer{
     int in_feat;
     int out_feat;
     Tensor Weight;

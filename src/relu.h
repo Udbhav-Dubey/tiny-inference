@@ -1,6 +1,7 @@
 #pragma once
 #include "tensor.h"
-class Relu{
+#include "Layer.h"
+class Relu:public Layer{
     public:
-        void forward(Tensor&);
+        Tensor forward(Tensor&);
 };
