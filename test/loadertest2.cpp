@@ -15,31 +15,26 @@ void printit(Tensor&x){
     }
 }
 void printit(float*x){
-    for (int i=0;i<24;i++){
+    for (int i=0;i<4;i++){
         if (i%4==0){std::cout << "\n";}
         std::cout << x[i] << " ";
     }
     std::cout << " \n";
 }
 int main (){
-    Tensor input(6,4);
+    Tensor input(1,4);
     float*in=input.data();
-    for (int i=1;i<24;i++){
-        if (i%3==0){
-            in[i]=-100+i;
-        }
-        else {
-            in[i]=100+i;
-        }
-    }
+    in[0]=1;
+    in[1]=2;
+    in[2]=3;
+    in[3]=4;
     std::cout << "input is \n";
     printit(in);
     sequence seq;
-    std::string wpath="../data_set/weights.txt";
-    std::string bpath="../data/set/bias.txt";
-    seq.add(new Linear (4,5,wpath,bpath));
+    std::string wpath="data_set/weights.txt";
+    std::string bpath="data_set/bias.txt";
+    seq.add(new Linear (4,2,wpath,bpath));
     seq.add(new Relu);
-    seq.add(new Linear (5,3,wpath,bpath));
     std::cout << "output is \n";
     Tensor output=seq.forward(input);
     printit(output);

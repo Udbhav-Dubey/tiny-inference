@@ -1,24 +1,32 @@
 #include "linear.h"
 #include "tensor.h"
 #include "GEMM.h"
+#include "utils.h"
 #include <cassert>
-Linear::Linear(int in,int out):in_feat{in},out_feat{out},Weight(in,out),bias(1,out_feat) {
-// this initialization only for testing will remove with future modules
-
-    float*w=Weight.data();
-    for (int i=0;i<in_feat*out_feat;i++){
-        w[i]=1.0f;
+#include <iostream>
+/*void print_val(Tensor&x){
+    std::cout << "\n";
+    int size=x.gsize();
+    float*X=x.data();
+    for (int i=0;i<size;i++){
+        std::cout << X[i] << "\n";
     }
-    float*b=bias.data();
-    for (int i=0;i<out_feat;i++){
-        b[i]=1.0f;
-    }
-  //  */
+}*/
+Linear::Linear(int in,int out,std::string &wpath,std::string &bpath):in_feat{in},out_feat{out},Weight(in,out),bias(1,out_feat) {
+    Weight=load_data(wpath);
+    assert(Weight.grow()==in &&"weights row should match input features\n");
+    assert(Weight.gcol()==out&&"weights col should match output features\n");
+//    print_val(Weight);
+    bias=load_data(bpath);
+  //  print_val(bias);
+    assert(bias.gcol()==out &&"bias col should match output features\n");
 }
 Tensor Linear::forward(Tensor&input){
     int in_row=input.grow();
     int in_col=input.gcol();
     assert(in_col==in_feat&&"the col of input should be equal to row of weights for multiplication");
+   // print_val(Weight);
+    //print_val(input);
     Tensor Out(Gemm(input,Weight));
     // for now lets do Gemm normal but we would need to figure the best one out in 3 options 
     float*o=Out.data();

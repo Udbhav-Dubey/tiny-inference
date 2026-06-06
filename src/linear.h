@@ -1,6 +1,7 @@
 #pragma once 
 #include "tensor.h"
 #include "Layer.h"
+#include "string"
 class Linear:public Layer{
     int in_feat;
     int out_feat;
@@ -8,6 +9,6 @@ class Linear:public Layer{
     Tensor bias;
     public:
     Linear()=delete;
-    Linear(int ,int );
+    Linear(int ,int ,std::string&,std::string&);
     Tensor forward(Tensor&);
 };

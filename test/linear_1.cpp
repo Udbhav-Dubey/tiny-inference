@@ -2,8 +2,11 @@
 #include "../src/tensor.h"
 #include "../src/GEMM.h"
 #include <iostream>
+#include <string>
 int main (){
-   Linear fc(3,2);
+    std::string wpath="../data_set/weights.txt";
+    std::string bpath="../data/set/bias.txt";
+   Linear fc(3,2,wpath,bpath);
    Tensor input(5,3);
    float *in=input.data();
    for (int i=0;i<15;i++){

@@ -5,7 +5,7 @@
 #include "../src/Layer.h"
 #include <iostream>
 int main (){
-  // Linear fc(3,2);
+/*  // Linear fc(3,2);
    Tensor input(5,3);
    float *in=input.data();
    for (int i=0;i<15;i++){
@@ -38,6 +38,6 @@ int main (){
         std:: cout << "\n";
     }
     delete l1;
-    delete l2;
+    delete l2; */
 return 0;
 }

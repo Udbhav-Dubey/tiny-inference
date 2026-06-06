@@ -69,6 +69,10 @@ add_executable(test_sequence2
 add_executable(test_loader_1
     test/loadertest1.cpp
 )
+add_executable(test_loader_2
+    test/loadertest2.cpp
+)
+target_link_libraries(test_loader_2 PRIVATE tensor)
 target_link_libraries(test_loader_1 PRIVATE tensor)
 target_link_libraries(test_sequence2 PRIVATE tensor)
 target_link_libraries(test_sequence PRIVATE tensor)
@@ -81,3 +85,17 @@ target_link_libraries(test_gemm_ijk PRIVATE tensor)
 target_link_libraries(benchmark_gemm1 PRIVATE tensor)
 target_link_libraries(test_tensor PRIVATE tensor)
 target_link_libraries(test_gemm PRIVATE tensor)
+set(TEST_TARGETS
+    test_tensor test_gemm test_gemm_ijk test_gemm_tiled
+    test_linear_1 test_relu_1 test_linear_relu_1
+    test_linear_relu_layer1 test_sequence test_sequence2
+    test_loader_1 test_loader_2
+)
+target_compile_options(tensor PRIVATE
+    -march=native
+    -UNDEBUG
+)
+
+foreach(t IN LISTS TEST_TARGETS)
+    target_compile_options(${t} PRIVATE -UNDEBUG)
+endforeach()

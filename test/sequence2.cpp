@@ -13,8 +13,10 @@ int main (){
         if (i%2){in[i]=-7-i;}
         else {in[i]=7+i;}
    }
+   std::string wpath="../data_set/weights.txt";
+    std::string bpath="../data/set/bias.txt";
    sequence seq;
-   seq.add(new Linear(3,2));
+   seq.add(new Linear(3,2,wpath,bpath));
    // Layer*l1,*l2;
     //l1=new Linear (3,2);
     //Tensor output=l1->forward(input);
