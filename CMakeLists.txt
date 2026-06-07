@@ -19,6 +19,7 @@ add_library(tensor
     src/relu.cpp
     src/sequence.cpp
     src/utils.cpp
+    src/prediction.cpp
 )
 target_compile_options(tensor PRIVATE
     -march=native
