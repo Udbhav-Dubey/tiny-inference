@@ -58,10 +58,13 @@ Tensor image::get_input(){
     grayscale();
     resize();
     normalize();
-    Tensor input(h,w);
+    Tensor input(1,h*w);
     float*in=input.data();
     for (int i=0;i<w*h;i++){
         in[i]=data[i];
     }
    return input; 
+}
+image::~image(){
+    stbi_image_free(pixels);
 }

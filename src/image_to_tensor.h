@@ -21,4 +21,5 @@ class image{
     public:
         image(std::string,int,int);
         Tensor get_input();
+        ~image();
 };
