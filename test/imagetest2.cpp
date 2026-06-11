@@ -1,10 +1,13 @@
 #include "../src/image_to_tensor.h"
 #include <iostream>
 #include <vector>
+#include "../src/tensor.h"
 int main (){
     image i("test/test_image.jpg",28,28);
-    std::vector<float>d=i.get_input();
-std::cout << d.size() << '\n';
+    Tensor in=i.get_input();
+    float*d=in.data();
+    int s=in.gsize();
+std::cout << s << '\n';
     for (int i = 0; i < 28; i++) {
     for (int j = 0; j < 28; j++) {
         float v = d[i * 28 + j];
@@ -22,9 +25,9 @@ std::cout << d.size() << '\n';
 }
     float mn = d[0];
     float mx = d[0];
-    for (float x : d) {
-    mn = std::min(mn, x);
-    mx = std::max(mx, x);
+    for (int i = 0; i < s; i++) {
+    mn = std::min(mn, d[i]);
+    mx = std::max(mx, d[i]);
     }
     std::cout << "min=" << mn << '\n';
     std::cout << "max=" << mx << '\n';

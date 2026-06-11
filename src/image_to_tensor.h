@@ -20,5 +20,5 @@ class image{
         void normalize();
     public:
         image(std::string,int,int);
-        std::vector<float> get_input();
+        Tensor get_input();
 };

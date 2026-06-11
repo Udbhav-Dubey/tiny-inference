@@ -54,12 +54,14 @@ void image::normalize(){
     }
 }
 
-std::vector<float> image::get_input(){
-    // before making a tensor do 3 things convert to size then grayscale then normalise 
-    // then i will just copy into fresh tensor and return ;
+Tensor image::get_input(){
     grayscale();
     resize();
     normalize();
-    // start making tensor here;
-   return data; 
+    Tensor input(h,w);
+    float*in=input.data();
+    for (int i=0;i<w*h;i++){
+        in[i]=data[i];
+    }
+   return input; 
 }
