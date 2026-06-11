@@ -20,6 +20,7 @@ add_library(tensor
     src/sequence.cpp
     src/utils.cpp
     src/prediction.cpp
+    src/image_to_tensor.cpp
 )
 target_compile_options(tensor PRIVATE
     -march=native
@@ -27,7 +28,9 @@ target_compile_options(tensor PRIVATE
 target_include_directories(tensor PUBLIC
     ${CMAKE_SOURCE_DIR}/src
 )
-
+target_include_directories(tensor PRIVATE 
+    ${CMAKE_SOURCE_DIR}/third_party
+)
 add_executable(tiny-inference
     src/main.cpp
 )
@@ -73,6 +76,10 @@ add_executable(test_loader_1
 add_executable(test_loader_2
     test/loadertest2.cpp
 )
+add_executable(test_image1
+    test/imagetest1.cpp
+)
+target_link_libraries(test_image1 PRIVATE tensor)
 target_link_libraries(test_loader_2 PRIVATE tensor)
 target_link_libraries(test_loader_1 PRIVATE tensor)
 target_link_libraries(test_sequence2 PRIVATE tensor)

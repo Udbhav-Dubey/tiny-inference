@@ -1,6 +1,7 @@
 // final input must be size 10 this is in architecure of the engine , if something changes please notify and change the code 
 // currently if same prediction that is not dealt with currently return the first one 
 #include "prediction.h"
+#include <cassert>
 int prediction(Tensor&input){
     int size=input.gsize();
     assert(size==10&&"the final tensor must be size of 10 to get output\n");
