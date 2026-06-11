@@ -35,18 +35,31 @@ void image::grayscale(){
 ch=1;
 }
 void image::resize(){
-   // 
+  data.resize(new_w*new_h);
+  float scalew=(float)w/new_w;
+  float scaleh=(float)h/new_h;
+  for (int i=0;i<new_h;i++){
+      for (int j=0;j<new_w;j++){
+        int ox=i*scaleh;
+        int oj=j*scalew;
+        data[i*new_w+j]=gray[ox*w+oj];
+      }
+  }
+  w=new_w;
+  h=new_h;
 }
 void image::normalize(){
-    //
+    for (int i=0;i<w*h;i++){
+        data[i]/=255.0f;
+    }
 }
 
 std::vector<float> image::get_input(){
     // before making a tensor do 3 things convert to size then grayscale then normalise 
     // then i will just copy into fresh tensor and return ;
     grayscale();
-//    resize();
-  //  normalize();
+    resize();
+    normalize();
     // start making tensor here;
-   return gray; 
+   return data; 
 }

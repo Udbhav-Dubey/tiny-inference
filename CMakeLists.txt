@@ -79,6 +79,10 @@ add_executable(test_loader_2
 add_executable(test_image1
     test/imagetest1.cpp
 )
+add_executable(test_image2
+    test/imagetest2.cpp
+)
+target_link_libraries(test_image2 PRIVATE tensor)
 target_link_libraries(test_image1 PRIVATE tensor)
 target_link_libraries(test_loader_2 PRIVATE tensor)
 target_link_libraries(test_loader_1 PRIVATE tensor)
