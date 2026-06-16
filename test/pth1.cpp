@@ -3,11 +3,15 @@
 #include <iostream>
 #include <string>
 int main (){
-    EOCD eocd;
+    Parser par;
     std::string path="test/mnist_mlp.pth";
-    eocd=read_eocd(path);
+    EOCD eocd=par.read_eocd(path);
 std::cout << "Entries: " << eocd.totalEntry << '\n';
 std::cout << "Central Directory Offset: " << eocd.centralDirOffset << '\n';
 std::cout << "Central Directory Size: " << eocd.centralDirSize<< '\n';
+    std::vector<zfiles>res=par.parse_central_directory();
+    for (auto x:res){
+        std::cout << x.filename << "\n";
+    }
 return 0;
 }
