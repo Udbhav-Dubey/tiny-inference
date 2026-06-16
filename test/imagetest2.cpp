@@ -3,7 +3,7 @@
 #include <vector>
 #include "../src/tensor.h"
 int main (){
-    image i("test/test_image.jpg",28,28);
+    image i("test/test_image.png",28,28);
     Tensor in=i.get_input();
     float*d=in.data();
     int s=in.gsize();

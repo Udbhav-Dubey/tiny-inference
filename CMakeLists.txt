@@ -21,6 +21,7 @@ add_library(tensor
     src/utils.cpp
     src/prediction.cpp
     src/image_to_tensor.cpp
+    src/pth_converter.cpp
 )
 target_compile_options(tensor PRIVATE
     -march=native
@@ -82,6 +83,10 @@ add_executable(test_image1
 add_executable(test_image2
     test/imagetest2.cpp
 )
+add_executable(test_pth1
+    test/pth1.cpp
+)
+target_link_libraries(test_pth1 PRIVATE tensor)
 target_link_libraries(test_image2 PRIVATE tensor)
 target_link_libraries(test_image1 PRIVATE tensor)
 target_link_libraries(test_loader_2 PRIVATE tensor)
