@@ -18,6 +18,8 @@ class image{
         void resize();
         void grayscale();
         void normalize();
+        void crop_to_digit();
+        void pad_to_square();  
     public:
         image(std::string,int,int);
         Tensor get_input();

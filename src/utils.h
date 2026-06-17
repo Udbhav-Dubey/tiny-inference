@@ -3,6 +3,7 @@
 #include <string>
 #include <fstream>
 Tensor load_data(std::string&filepath);
+Tensor load_data_transposed(std::string&filepath);
 template<typename T>
 T read (std::ifstream&file){
     T value;

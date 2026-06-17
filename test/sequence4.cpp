@@ -24,27 +24,22 @@ void printit(float*x){
     }
     std::cout << " \n";
 }
-int main (){
-    image i("test/9.png",28,28);
-    Tensor in=i.get_input();
-    std::cout << "row is  " << in.grow() << " col is " << in.gcol() << "\n";
-    float*im=in.data();
-    std::cout << " first 24 inputs are \n";
-   printit(im);
+int main(){
+    std::string ppath = "test/mnist_0_label7.txt";
+    Tensor in = load_data(ppath);
+    std::cout << "row=" << in.grow() << " col=" << in.gcol() << "\n";
+
     sequence seq;
-    std::string wpath0="data_set/weight0.txt";
-    std::string bpath0="data_set/bias0.txt";
-    std::string wpath2="data_set/weight2.txt";
-    std::string bpath2="data_set/bias2.txt";
-    // weights loading 
-    seq.add(new Linear (784,128,wpath0,bpath0));
+    std::string wpath0 = "data_set/weight0.txt";
+    std::string bpath0 = "data_set/bias0.txt";
+    std::string wpath2 = "data_set/weight2.txt";
+    std::string bpath2 = "data_set/bias2.txt";
+    seq.add(new Linear(784, 128, wpath0, bpath0));
     seq.add(new Relu);
-    seq.add(new Linear (128,10,wpath2,bpath2));
-    std::cout << "output is \n";
-    // processing 
-    Tensor output=seq.forward(in);
+    seq.add(new Linear(128, 10, wpath2, bpath2));
+
+    Tensor output = seq.forward(in);
     printit(output);
-    std::cout << "final ans : " << prediction(output) << "\n";
-    // idhar prediction aayegi
+    std::cout << "predicted: " << prediction(output) << " expected: 7\n";
     return 0;
 }

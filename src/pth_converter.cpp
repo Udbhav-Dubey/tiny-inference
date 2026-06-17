@@ -167,6 +167,7 @@ case  GLOBAL : {
          case NONE:
          case NEWTRUE:
          case NEWFALSE:
+        case BINPERSID: { break; }
         case STOP :{break;}
         default:{
         std::cerr<<"opcode not in list \n opcode is " << std::hex << (int)op<< "at pos " << std::dec << (pos-1) <<"\n";
@@ -246,6 +247,9 @@ case  GLOBAL : {
          t.numel     = tokens[i+2].v;
          t.shape.push_back(tokens[i+4].v);
 }
+std::cout << "DEBUG: name=" << t.name 
+          << " storageid=" << t.storageid 
+          << " numel=" << t.numel << "\n";
 tensordata.push_back(t);
     }
    /*   for (size_t i=0;i<tokens.size();i++){
@@ -316,7 +320,7 @@ void Parser::get_weights(){
         file.seekg(storagefile.localheaderOffset+26);
         uint16_t local_namesize=read<uint16_t>(file);
         uint16_t local_extrasize=read<uint16_t>(file);
-        uint16_t actual_offset=storagefile.localheaderOffset+30+local_namesize+local_extrasize;
+        uint32_t actual_offset=storagefile.localheaderOffset+30+local_namesize+local_extrasize;
         file.seekg(actual_offset);
         std::vector<uint8_t>raw(storagefile.uncompressed_Size);
         file.read(reinterpret_cast<char*>(raw.data()),raw.size());
@@ -345,12 +349,12 @@ void Parser::get_weights(){
         }
         else {
         for (size_t i=0;i<count;i++){
-            out << fdata[i] << "\n";
+            out << fdata[i] ;
             if (i+1 <count) out << " ";
         }
         out << "\n";
         }
-                std::cout << "wrote " << count << " floats -> " << outname << "\n";
+               // std::cout << "wrote " << count << " floats -> " << outname << "\n";
 
     }
 }

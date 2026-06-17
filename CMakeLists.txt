@@ -86,6 +86,14 @@ add_executable(test_image2
 add_executable(test_pth1
     test/pth1.cpp
 )
+add_executable(test_sequence3
+    test/sequence3.cpp
+)
+add_executable(test_sequence4
+    test/sequence4.cpp
+)
+target_link_libraries(test_sequence4 PRIVATE tensor)
+target_link_libraries(test_sequence3 PRIVATE tensor)
 target_link_libraries(test_pth1 PRIVATE tensor)
 target_link_libraries(test_image2 PRIVATE tensor)
 target_link_libraries(test_image1 PRIVATE tensor)

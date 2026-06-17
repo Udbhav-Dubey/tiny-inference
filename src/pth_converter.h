@@ -31,7 +31,7 @@ constexpr uint8_t NONE = 0x4E;
 constexpr uint8_t NEWTRUE = 0x88;
 constexpr uint8_t NEWFALSE = 0x89;
 constexpr uint8_t STOP = 0x2E;
-
+constexpr uint8_t BINPERSID = 0x51;
 struct EOCD{
     uint16_t totalEntry;
     uint32_t centralDirOffset;

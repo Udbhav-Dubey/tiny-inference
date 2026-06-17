@@ -1,6 +1,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "image_to_tensor.h"
 #include <iostream>
+#include <algorithm>
 image::image(std::string ipath,int nh,int nw){
     path=ipath;
     new_w=nw;
@@ -40,9 +41,15 @@ void image::resize(){
   float scaleh=(float)h/new_h;
   for (int i=0;i<new_h;i++){
       for (int j=0;j<new_w;j++){
-        int ox=i*scaleh;
-        int oj=j*scalew;
-        data[i*new_w+j]=gray[ox*w+oj];
+//        int ox=i*scaleh;
+//        int oj=j*scalew;
+        int r0=i*scaleh, r1=std::min((int)((i+1)*scaleh), h-1);
+        int c0=j*scalew, c1=std::min((int)((j+1)*scalew), w-1);
+         float sum=0;
+         int count=0;
+        for(int r=r0;r<=r1;r++)
+            for(int c=c0;c<=c1;c++){sum+=gray[r*w+c];count++;}
+        data[i*new_w+j]=sum/count;
       }
   }
   w=new_w;
@@ -50,7 +57,8 @@ void image::resize(){
 }
 void image::normalize(){
     for (int i=0;i<w*h;i++){
-        data[i]/=255.0f;
+     data[i]/=255.0f;
+     //  data[i]=1.0f-(data[i]/255.0f);
     }
 }
 

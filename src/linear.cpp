@@ -13,7 +13,7 @@
     }
 }*/
 Linear::Linear(int in,int out,std::string &wpath,std::string &bpath):in_feat{in},out_feat{out},Weight(in,out),bias(1,out_feat) {
-    Weight=load_data(wpath);
+    Weight=load_data_transposed(wpath);
     assert(Weight.grow()==in &&"weights row should match input features\n");
     assert(Weight.gcol()==out&&"weights col should match output features\n");
 //    print_val(Weight);
