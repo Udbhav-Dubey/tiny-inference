@@ -74,8 +74,11 @@ private:
     EOCD eocd;
     std::vector<zfiles>zip_files;
     std::vector<uint8_t>bytes;
+    std::vector<WData>tdata;
 public:
 EOCD read_eocd(std::string&);
 std::vector<zfiles> parse_central_directory();
 void create_metadata(std::string& );
+void get_weights();
 };
+

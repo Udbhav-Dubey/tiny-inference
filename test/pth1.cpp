@@ -15,5 +15,6 @@ std::cout << "Central Directory Size: " << eocd.centralDirSize<< '\n';
     }
     std::string mpath="data_set/metadata.txt";
     par.create_metadata(mpath);
+    par.get_weights();
 return 0;
 }

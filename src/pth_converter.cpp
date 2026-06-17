@@ -289,5 +289,68 @@ tensordata.push_back(t);
         out << "]\n";
         out << "Numel :" << t.numel << "\n";
     }
+tdata=tensordata;
 }
+void Parser::get_weights(){
+    for (auto &t:tdata){
+        std::string target="data/"+std::to_string(t.storageid);
+        zfiles storagefile;
+        bool found=0;
+        for (auto zf:zip_files){
+            if (zf.filename.find(target)!=std::string::npos){
+                storagefile=zf;
+                found=1;
+                break;
+            }
+        }
+        if (!found){std::cerr<<"failed to found the data file\n";
+            continue;
+        }
+       // file.seekg(storagefile.dataOffset); -> causing bug not sure try manual
+        file.seekg(storagefile.localheaderOffset);
+        uint32_t sig=read<uint32_t>(file);
+        if (sig!=0x04034B50){
+            std::cerr<<"failed to get data file\n";
+            continue;
+        }
+        file.seekg(storagefile.localheaderOffset+26);
+        uint16_t local_namesize=read<uint16_t>(file);
+        uint16_t local_extrasize=read<uint16_t>(file);
+        uint16_t actual_offset=storagefile.localheaderOffset+30+local_namesize+local_extrasize;
+        file.seekg(actual_offset);
+        std::vector<uint8_t>raw(storagefile.uncompressed_Size);
+        file.read(reinterpret_cast<char*>(raw.data()),raw.size());
+        float* fdata=reinterpret_cast<float*>(raw.data());
+        size_t count=raw.size()/sizeof(float);
+       /* std::string outname;
+        if (t.name.find("weight")!=std::string::npos){
+            outname="data_set/weights"+std::to_string(t.storageid+1)+".txt";
+        }
+        else {
+            outname="data_set/bias"+std::to_string(t.storageid)+".txt";
+            }*/   
+        std::string layer=t.name.substr(0,t.name.find('.'));
+        std::string type=t.name.substr(t.name.find('.')+1);
+        std::string outname="data_set/"+type+layer+".txt";
+        std::ofstream out(outname);
+        if (t.name.find(".weight")!=std::string::npos){
+            size_t cols=t.shape[1];
+            for (size_t i=0;i<count;i++){
+                out << fdata[i];
+                if ((i+1)%cols==0){
+                    out << "\n";
+                }
+                else {out << " ";}
+            }
+        }
+        else {
+        for (size_t i=0;i<count;i++){
+            out << fdata[i] << "\n";
+            if (i+1 <count) out << " ";
+        }
+        out << "\n";
+        }
+                std::cout << "wrote " << count << " floats -> " << outname << "\n";
 
+    }
+}
