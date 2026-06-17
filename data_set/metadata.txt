@@ -1,0 +1,20 @@
+Tensor : 0.weight
+Storage : 0
+Dtype : float32
+Shape [128,784]
+Numel :100352
+Tensor : 0.bias
+Storage : 1
+Dtype : float32
+Shape [128]
+Numel :128
+Tensor : 2.weight
+Storage : 2
+Dtype : float32
+Shape [10,128]
+Numel :1280
+Tensor : 2.bias
+Storage : 3
+Dtype : float32
+Shape [10]
+Numel :10
