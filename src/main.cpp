@@ -4,6 +4,14 @@
 #include "utils.h"
 #include "image_to_tensor.h"
 #include <cmath>
+#include "sequence.h"
+#include "tensor.h"
+#include "linear.h"
+#include "relu.h"
+#include "Layer.h"
+#include "prediction.h"
+#include <cassert>
+#include <limits>
 std::string artBlock = R"(
  _   __      _                   _   _                                             
 | | / /     | |                 | | ( )                                            
@@ -43,22 +51,41 @@ void run_model(){
     std::vector<metadata_file> mfiles=read_metadata_file();
     //check_mfiles(mfiles);
     int mfiles_size=mfiles.size();
-    std::cout << "mfiles_size : "<<mfiles_size << "\n";
     std::cout<<"enter the image path\n";
     std::string ipath;
     std::cin >>ipath;
     int res=mfiles[0].shape.back();
     res=std::sqrt(res);
     image input(ipath,res,res);
-    std::cout << res<<"\n";
-    //sequece seq;
-    std::cout << "data_set/";
+    Tensor in=input.get_input();
+    sequence seq;
+    assert(mfiles.size()%2==0&&"the dataset must have weight bias pair to work\n");
+    for (int i=0;i<mfiles_size;i+=2){
+        assert(mfiles[i].type=="weight"&&"expected weight at even index\n");
+        assert(mfiles[i+1].type="bias"&&"expected bias at odd index\n");
+        assert(mfiles[i].shape[0]==mfiles[i+1].shape[0]&&"weight ouptut features should meet bias size\n");
+        std::string wpath="data_set/"+mfiles[i].type+mfiles[i].nnum+".txt";
+        std::string bpath="data_set/"+mfiles[i+1].type+mfiles[i+1].nnum+".txt";
+        seq.add(new Linear(mfiles[i].shape[1],mfiles[i].shape[0],wpath,bpath));
+        if (i+2<mfiles.size()){
+            seq.add(new Relu);
+        }
+    }
+    Tensor output=seq.forward(in);
+    std::cout << "currently using gemm_tiled\n";
+    std::cout << "final ans : " << prediction(output) << "\n";
 }
 void ask_options(){
     int option{};
     while(true){
         bool flag{0};
-        std::cin>>option;
+        if (!(std::cin>>option)){
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
+            std::cout<<"\ninvalid input,enter a number only\n";
+            show_options();
+            continue;
+        }
         switch(option){
             case 1 :  // run the model;
                       run_model();
