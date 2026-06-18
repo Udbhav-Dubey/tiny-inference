@@ -1,6 +1,9 @@
 #include <iostream>
 #include <string>
 #include "pth_converter.h"
+#include "utils.h"
+#include "image_to_tensor.h"
+#include <cmath>
 std::string artBlock = R"(
  _   __      _                   _   _                                             
 | | / /     | |                 | | ( )                                            
@@ -36,6 +39,21 @@ void show_options(){
     std::cout << "2 : update the model " << "\n"; 
     std::cout << "3 : quit \n";
 }
+void run_model(){
+    std::vector<metadata_file> mfiles=read_metadata_file();
+    //check_mfiles(mfiles);
+    int mfiles_size=mfiles.size();
+    std::cout << "mfiles_size : "<<mfiles_size << "\n";
+    std::cout<<"enter the image path\n";
+    std::string ipath;
+    std::cin >>ipath;
+    int res=mfiles[0].shape.back();
+    res=std::sqrt(res);
+    image input(ipath,res,res);
+    std::cout << res<<"\n";
+    //sequece seq;
+    std::cout << "data_set/";
+}
 void ask_options(){
     int option{};
     while(true){
@@ -43,7 +61,7 @@ void ask_options(){
         std::cin>>option;
         switch(option){
             case 1 :  // run the model;
-                std::cout << "\nwill run the model here\n";
+                      run_model();
                       break;
             case 2 :  // update the model;
                     update_data_set();
