@@ -1,6 +1,6 @@
 #include "pth_converter.h"
 #include <iostream>
-EOCD Parser::read_eocd(std::string & pth_f){
+void Parser::read_eocd(std::string & pth_f){
     file.open(pth_f,std::ios::binary);
     if (!file){
         std::cerr<<"failed to open file\n";
@@ -27,9 +27,9 @@ EOCD Parser::read_eocd(std::string & pth_f){
 uint32_t sig = read<uint32_t>(file);
 std::cout<< "Central Dir Signature: 0x" << std::hex << sig << '\n';
 */    
-return eocd;
+//return eocd;
 }
-std::vector<zfiles> Parser::parse_central_directory(){
+void Parser::parse_central_directory(){
     file.seekg(eocd.centralDirOffset); 
     std::vector<zfiles>res(eocd.totalEntry);
     for (int i=0;i<eocd.totalEntry;i++){
@@ -61,7 +61,7 @@ std::vector<zfiles> Parser::parse_central_directory(){
         res[i]=zf;
     }
     zip_files=res;
-    return res;
+  //  return res;
 }  
 std::string Parser::read_binunicode(size_t &pos){
     uint32_t len=bytes[pos]|(bytes[pos+1]<<8)|(bytes[pos+2]<<16)|(bytes[pos+3]<<24);
@@ -170,19 +170,20 @@ case  GLOBAL : {
         case BINPERSID: { break; }
         case STOP :{break;}
         default:{
-        std::cerr<<"opcode not in list \n opcode is " << std::hex << (int)op<< "at pos " << std::dec << (pos-1) <<"\n";
+  //      std::cerr<<"opcode not in list \n opcode is " << std::hex << (int)op<< "at pos " << std::dec << (pos-1) <<"\n";
             break;
                 }
 
         } 
 }
     // debug — print all tokens so you can figure out offsets
-    for (size_t i = 0; i < tokens.size(); i++){
+    /*for (size_t i = 0; i < tokens.size(); i++){
         if (tokens[i].type == token::STRING)
             std::cout << "[" << i << "] STRING: " << tokens[i].s << "\n";
         else
             std::cout << "[" << i << "] INT:    " << tokens[i].v << "\n";
     }
+    */
 
    /* while(pos<bytes.size()){
         uint8_t op=bytes[pos++];
@@ -228,7 +229,7 @@ case  GLOBAL : {
         if (name.find(".weight") != std::string::npos){
         if (i + 7 >= tokens.size()) continue;
         size_t id_pos   = (tokens[i+1].s == "storage") ? i+2 : i+1;
-        size_t numel_pos = (tokens[i+1].s == "storage") ? i+4 : i+2;  // skip "cpu" if present
+        size_t numel_pos = (tokens[i+1].s == "storage") ? i+4 : i+2;  
         size_t shape_pos = (tokens[i+1].s == "storage") ? i+6 : i+4;
     
         const std::string &sid = tokens[id_pos].s;
@@ -247,9 +248,12 @@ case  GLOBAL : {
          t.numel     = tokens[i+2].v;
          t.shape.push_back(tokens[i+4].v);
 }
-std::cout << "DEBUG: name=" << t.name 
-          << " storageid=" << t.storageid 
-          << " numel=" << t.numel << "\n";
+
+
+std::cout << "DEBUG: name=" << t.name << " storageid=" << t.storageid  << " numel=" << t.numel << "\n";
+
+
+
 tensordata.push_back(t);
     }
    /*   for (size_t i=0;i<tokens.size();i++){
@@ -357,4 +361,11 @@ void Parser::get_weights(){
                // std::cout << "wrote " << count << " floats -> " << outname << "\n";
 
     }
+}
+void Parser::extract_dataset(std::string&path){
+    read_eocd(path);
+    parse_central_directory();
+    std::string mpath="data_set/metadata.txt";
+    create_metadata(mpath);
+    get_weights();
 }
