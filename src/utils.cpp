@@ -115,6 +115,10 @@ std::vector<metadata_file>read_metadata_file(){
                 temp.shape={rows};
             }
         }
+        else if (line.starts_with("Numel")){
+            auto col=line.find(':');
+            temp.numel=std::stoi(line.substr(col+1));
+        }
 
     }
     if (rt_flag){res.push_back(temp);}

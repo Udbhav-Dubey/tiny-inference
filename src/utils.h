@@ -8,6 +8,7 @@ struct metadata_file{
     std::string name{};
     std::string nnum{};
     std::vector<int>shape;
+    int numel{};
     std::string type{};
 };
 Tensor load_data(std::string&filepath);
