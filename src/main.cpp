@@ -62,7 +62,7 @@ void run_model(){
     assert(mfiles.size()%2==0&&"the dataset must have weight bias pair to work\n");
     for (int i=0;i<mfiles_size;i+=2){
         assert(mfiles[i].type=="weight"&&"expected weight at even index\n");
-        assert(mfiles[i+1].type="bias"&&"expected bias at odd index\n");
+        assert(mfiles[i+1].type=="bias"&&"expected bias at odd index\n");
         assert(mfiles[i].shape[0]==mfiles[i+1].shape[0]&&"weight ouptut features should meet bias size\n");
         std::string wpath="data_set/"+mfiles[i].type+mfiles[i].nnum+".txt";
         std::string bpath="data_set/"+mfiles[i+1].type+mfiles[i+1].nnum+".txt";
