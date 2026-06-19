@@ -36,7 +36,7 @@ void update_data_set(){
     std::cout << "press enter to get default(test/mnist_mlp.pth) \n \n";
     std::cin.ignore();
     std::getline(std::cin, path);
-    if (path.empty()){path="test/mnist_mlp.pth";}
+    if (path.empty()){path="test_data/mnist_mlp.pth";}
     Parser par;
     par.extract_dataset(path);
     std::cout << "updated the model in folder dataset\n";
@@ -73,7 +73,8 @@ void run_model(){
     }
     Tensor output=seq.forward(in);
     std::cout << "currently using gemm_tiled\n";
-    std::cout << "final ans : " << prediction(output) << "\n";
+    show_top3(output);
+    std::cout << "\nfinal ans : " << prediction(output) << "\n";
 }
 void ask_options(){
     int option{};
