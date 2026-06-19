@@ -34,7 +34,7 @@ std::string d_path{"test_data/mnist_mlp.pth"};
 void update_data_set(){
     std::string path{};
     std::cout << "enter the path to data_set file\ncurrently supporting .pth only\n";
-    std::cout << "press enter to get default(test/mnist_mlp.pth) \n \n";
+    std::cout << "press enter to get default(test_data/mnist_mlp.pth) \n \n";
     std::cin.ignore();
     std::getline(std::cin, path);
     if (path.empty()){path="test_data/mnist_mlp.pth";}

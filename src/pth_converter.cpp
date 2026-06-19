@@ -250,7 +250,7 @@ case  GLOBAL : {
 }
 
 
-std::cout << "DEBUG: name=" << t.name << " storageid=" << t.storageid  << " numel=" << t.numel << "\n";
+std::cout << "FOUND TENSOR: name=" << t.name << " storageid=" << t.storageid  << " numel=" << t.numel << "\n";
 
 
 

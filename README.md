@@ -35,15 +35,21 @@ The layer dimensions and image resize target are read from the extracted model m
 
 ---
 
-## Inference output (real run)
+## Inference Output (Real Run)
 
-![inference demo](assets/inference_demo.png)
+Showcasing running the engine:
 
-```
-INFERENCE REPORT →
+![Inference Demo](assets/inference_demo_1.gif)
+
+Screenshot of inference + benchmark:
+
+![Inference Screenshot](assets/inference_demo.png)
+
+```text
+INFERENCE REPORT
 
 Model Name   : "mnist_mlp.pth"
-Input shape  : 1 × 784
+Input shape  : 1 x 784
 Total params : 101770
 Layers       : Linear = 2, ReLU = 1
 GEMM         : tiled(256)
@@ -56,12 +62,17 @@ top 3 predictions:
 final ans : 3
 
 TIME TAKEN :
-  image → tensor    : 1502 microseconds
-  loading model     : 10100 microseconds
-  inference         : 8 microseconds
-  total time        : 11611 microseconds
+  image -> tensor : 1502 microseconds
+  loading model   : 10100 microseconds
+  inference       : 8 microseconds
+  total time      : 11611 microseconds
 ```
 
+## Model Loading Demo
+
+Showcasing updating the model:
+
+![Model Loading Demo](assets/inference_demo_2.gif)
 ---
 
 ## Architecture
