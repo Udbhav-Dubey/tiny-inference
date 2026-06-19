@@ -321,8 +321,4 @@ GCC auto-vectorization, AVX2, and FMA generation were previously verified; this 
 * `tiled(256)` produced the best overall result, achieving approximately **1.8× higher performance** than the flat `ikj` kernel at 2000×2000.
 * Increasing the tile size further to 512 caused a significant regression, suggesting that the tile no longer fits efficiently within the processor's cache hierarchy and begins to lose the locality benefits that blocking is intended to provide.
 * Earlier SIMD investigations confirmed that GCC already generates AVX2 and FMA instructions under `-march=native`, so the performance gains observed here are primarily attributable to improved cache utilization rather than improved vectorization.
-* This experiment demonstrates that effective GEMM optimization is not solely about arithmetic throughput; once SIMD is largely solved by the compiler, cache locality and data movement become the primary factors determining performance can you give me this .md format please
- 
-
-
-
+* This experiment demonstrates that effective GEMM optimization is not solely about arithmetic throughput; once SIMD is largely solved by the compiler, cache locality and data movement become the primary factors determining performance.
