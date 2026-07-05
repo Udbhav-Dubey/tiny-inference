@@ -92,6 +92,14 @@ add_executable(test_sequence3
 add_executable(test_sequence4
     test/sequence4.cpp
 )
+add_executable(test_gemm_simd
+    test/gemm_test4.cpp
+)
+add_executable(test_gemm_simd2
+    test/gemm_test5.cpp
+)
+target_link_libraries(test_gemm_simd2 PRIVATE tensor)
+target_link_libraries(test_gemm_simd PRIVATE tensor)
 target_link_libraries(test_sequence4 PRIVATE tensor)
 target_link_libraries(test_sequence3 PRIVATE tensor)
 target_link_libraries(test_pth1 PRIVATE tensor)

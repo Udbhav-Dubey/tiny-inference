@@ -2,6 +2,7 @@
 #include <cassert>
 #include <algorithm>
 #include <iostream>
+#include <immintrin.h>
 Tensor Gemm(Tensor&a,Tensor&b){
    const float* A=a.data();
    const float* B=b.data();
@@ -75,5 +76,33 @@ Tensor Gemm_tiled(Tensor&a,Tensor&b,int block_size){
             }
         }
     }
+    return c;
+}
+Tensor Gemm_simd(Tensor&a,Tensor&b){
+    const float*A=a.data();
+    const float*B=b.data();
+    const int a_row=a.grow(); 
+    const int b_row=b.grow();
+    const int a_col=a.gcol();
+    const int b_col=b.gcol();
+    assert(a_col==b_row&&"need to get a.col==b.row equal for matrix multiply");
+    Tensor c(a_row,b_col);
+    float*C=c.data();
+    int jend=b_col-(b_col%8);
+    for (int i=0;i<a_row;i++){
+            for (int k=0;k<a_col;k++){
+               __m256 as=_mm256_broadcast_ss(&A[i*a_col+k]);
+               int j=0;
+                for (;j<jend;j+=8){
+                __m256 cs=_mm256_loadu_ps(&C[i*b_col+j]);
+                __m256 bs=_mm256_loadu_ps(&B[k*b_col+j]);
+                cs=_mm256_fmadd_ps(as,bs,cs);
+            _mm256_storeu_ps(&C[i*b_col+j],cs);
+            }
+                for (;j<b_col;j++){
+                    C[i*b_col+j]+=A[i*a_col+k]*B[k*b_col+j];
+                }
+        }
+    } 
     return c;
 }
