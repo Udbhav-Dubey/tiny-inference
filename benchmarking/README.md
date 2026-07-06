@@ -322,3 +322,60 @@ GCC auto-vectorization, AVX2, and FMA generation were previously verified; this 
 * Increasing the tile size further to 512 caused a significant regression, suggesting that the tile no longer fits efficiently within the processor's cache hierarchy and begins to lose the locality benefits that blocking is intended to provide.
 * Earlier SIMD investigations confirmed that GCC already generates AVX2 and FMA instructions under `-march=native`, so the performance gains observed here are primarily attributable to improved cache utilization rather than improved vectorization.
 * This experiment demonstrates that effective GEMM optimization is not solely about arithmetic throughput; once SIMD is largely solved by the compiler, cache locality and data movement become the primary factors determining performance.
+
+---
+
+## GEMM V4 — Manual AVX2 SIMD (Flat and Tiled)
+
+### Description
+
+Two new kernels, both hand-written with AVX2 intrinsics (`_mm256_fmadd_ps`, `_mm256_loadu_ps`/`storeu_ps`) instead of relying on GCC auto-vectorization:
+
+- **`Gemm_simd`** — same `ikj` loop order as the flat kernel, but the innermost `j` loop is manually unrolled 8-wide using `_mm256_broadcast_ss` for the scalar `A[i,k]` and FMA against 8 contiguous `B`/`C` elements. A scalar cleanup loop handles any remainder when `b_col` isn't a multiple of 8.
+- **`Gemm_tiled_simd`** — identical tiling structure to V3's `Gemm_tiled` (same `i_t → j_t → k_t` blocking), but the innermost per-tile `j` loop is replaced with the same 8-wide AVX2 FMA pattern, with a scalar cleanup loop for the tile's remainder columns.
+
+The goal was to check whether writing the vectorization explicitly, rather than trusting the compiler, would yield a further speedup on top of V2 (flat, auto-vectorized) and V3 (tiled).
+
+```cpp
+// Gemm_simd inner loop
+__m256 as = _mm256_broadcast_ss(&A[i*a_col+k]);
+for (; j < jend; j += 8) {
+    __m256 cs = _mm256_loadu_ps(&C[i*b_col+j]);
+    __m256 bs = _mm256_loadu_ps(&B[k*b_col+j]);
+    cs = _mm256_fmadd_ps(as, bs, cs);
+    _mm256_storeu_ps(&C[i*b_col+j], cs);
+}
+```
+
+### Benchmark Results
+
+All runs in Release mode (`-O3 -march=native`).
+
+#### Flat: manual SIMD vs. auto-vectorized `ikj`
+
+| Size        | ikj (ns)      | Manual SIMD (ns) | vs ikj            |
+|-------------|---------------|-------------------|--------------------|
+| 200 × 200   | `441,513`     | `453,105`         | **~1.03× slower**  |
+| 500 × 500   | `7,364,193`   | `7,341,410`       | **~1.0× (even)**   |
+| 1000 × 1000 | `56,407,819`  | `64,118,899`      | **~1.14× slower**  |
+| 2000 × 2000 | `828,095,397` | `689,567,585`     | **~1.2× faster**   |
+
+#### Tiled: manual SIMD vs. plain tiled, best block sizes shown
+
+| Block Size | Size        | Tiled (ns)    | SIMD Tiled (ns) | vs plain tiled     |
+|------------|-------------|---------------|-----------------|--------------------|
+| 128        | 1000×1000   | `61,189,179`  | `66,998,390`    | **~1.09× slower**  |
+| 256        | 200 × 200   | `454,598`     | `457,920`       | **~1.01× slower**  |
+| 256        | 500 × 500   | `7,835,911`   | `8,249,539`     | **~1.05× slower**  |
+| 256        | 1000 × 1000 | `57,495,697`  | `58,868,312`    | **~1.02× slower**  |
+| 256        | 2000 × 2000 | `457,223,237` | `458,068,132`   | **~1.0× (even)**   |
+
+Full data for all block sizes (16–512) is in the tables at the top of this log, under "For SIMD TILED".
+
+### Observations
+
+- Manual AVX2 SIMD does **not** consistently beat the compiler auto-vectorized `ikj` kernel, and at 1000×1000 it's noticeably slower (~14%). The one clear win is at 2000×2000, where flat manual SIMD is ~1.2× faster than flat `ikj`.
+- Manual SIMD on top of tiling produces **no improvement** over plain tiling at any size — at best it ties (2000×2000, block 256), and at worst it's ~9% slower (block 128, 1000×1000).
+- This confirms the hypothesis from V3: GCC's auto-vectorization under `-O3 -march=native` was already extracting most of the available SIMD throughput from the flat and tiled kernels. Hand-rolling the same 8-wide FMA pattern mostly just adds instruction overhead (broadcast, load/store shuffling) without giving the compiler anything new to exploit.
+- The best performer overall remains **plain tiled(256)** from V3 — manual SIMD tiling essentially reproduces its performance rather than surpassing it.
+- Practical takeaway: once the compiler is already vectorizing a memory/cache-bound kernel, further gains are far more likely to come from improving data locality (blocking, layout, prefetching) than from hand-written intrinsics. Manual SIMD is worth revisiting only if profiling shows the kernel is genuinely arithmetic-throughput-bound rather than memory-bound.
