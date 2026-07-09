@@ -66,11 +66,12 @@ Tensor Gemm_tiled(Tensor&a,Tensor&b,int block_size){
                const int k_end=std::min(k_t+block_size,a_col);
                const int j_end=std::min(block_size+j_t,b_col);
                for (int i=i_t;i<i_end;i++){
-                for (int k=k_t;k<k_end;k++){
-                        float ak=A[i*a_col+k];
                     for (int j=j_t;j<j_end;j++){
-                        C[i*b_col+j]+=ak*B[k*b_col+j];
+                        float acc=C[i*b_col+j];
+                for (int k=k_t;k<k_end;k++){
+                        acc+=A[i*a_col+k]*B[k*b_col+j];
                     }
+                        C[i*b_col+j]=acc;
                 }
                }
             }
@@ -123,21 +124,27 @@ Tensor Gemm_tiled_simd(Tensor&a,Tensor&b,int block_size){
                const int k_end=std::min(k_t+block_size,a_col);
                const int j_end=std::min(block_size+j_t,b_col);
                for (int i=i_t;i<i_end;i++){
-                for (int k=k_t;k<k_end;k++){
-                            float ak=A[i*a_col+k];
-                            __m256 as=_mm256_set1_ps(ak);
-                            int j=j_t;
-                            int j_simd_end=j_end-((j_end-j_t)%8);
-                        for (;j<j_simd_end;j+=8){
+                    int j=j_t;
+                    int j_simd_end=j_end-((j_end-j_t)%8);
+                for (;j<j_simd_end;j+=8){
                             __m256 cs=_mm256_loadu_ps(&C[i*b_col+j]);
+                     for (int k=k_t;k<k_end;k++){
+           //                 float ak=A[i*a_col+k];
+             //               __m256 as=_mm256_set1_ps(ak);
+                           __m256 as=_mm256_broadcast_ss(&A[i*a_col+k]);
                             __m256 bs=_mm256_loadu_ps(&B[k*b_col+j]);
                             cs=_mm256_fmadd_ps(as,bs,cs);
-                            _mm256_storeu_ps(&C[i*b_col+j],cs);
                     }
-                        for (;j<j_end;j++){
-                        C[i*b_col+j]+=A[i*a_col+k]*B[k*b_col+j];
-                        }
+                            _mm256_storeu_ps(&C[i*b_col+j],cs);
                 }
+                        for (;j<j_end;j++){
+                            float acc=C[i*b_col+j];
+                            for (int k=k_t;k<k_end;k++){
+                        acc+=A[i*a_col+k]*B[k*b_col+j];
+                            }
+                            C[i*b_col+j]=acc;
+                        }
+                
                }
             }
         }

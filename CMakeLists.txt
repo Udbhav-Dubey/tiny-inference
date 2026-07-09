@@ -98,6 +98,10 @@ add_executable(test_gemm_simd
 add_executable(test_gemm_simd2
     test/gemm_test5.cpp
 )
+add_executable(test_gemm_tiled_simd
+    test/tiling1.cpp
+)
+target_link_libraries(test_gemm_tiled_simd PRIVATE tensor)
 target_link_libraries(test_gemm_simd2 PRIVATE tensor)
 target_link_libraries(test_gemm_simd PRIVATE tensor)
 target_link_libraries(test_sequence4 PRIVATE tensor)
@@ -132,3 +136,7 @@ target_compile_options(tensor PRIVATE
 foreach(t IN LISTS TEST_TARGETS)
     target_compile_options(${t} PRIVATE -UNDEBUG)
 endforeach()
+target_compile_options(test_gemm_tiled_simd PRIVATE
+    -march=native
+)
+
