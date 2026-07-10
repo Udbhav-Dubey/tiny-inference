@@ -118,7 +118,7 @@ int main(){
     run_multi(500,500,500,500,turn);
     run_multi(1000,1000,1000,1000,turn);
     run_multi(2000,2000,2000,2000,turn);
-    turn=2;
+   turn=2;
     std::cout << "\nfor simd\n";
     run_multi(200,200,200,200,turn);
     run_multi(500,500,500,500,turn);
@@ -133,7 +133,7 @@ int main(){
     run_multi(1000,1000,1000,1000,turn,i,idx);
     run_multi(2000,2000,2000,2000,turn,i,idx);
     }
-    idx=0;
+   idx=0;
     turn=4;
     for (int i=16;i<=512;i*=2,idx++){
     std::cout << "\nfor simd tiled "<< i <<"  block size \n";
