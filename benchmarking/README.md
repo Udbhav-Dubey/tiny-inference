@@ -240,19 +240,6 @@ Additional investigation during V3 development showed that GCC already auto-vect
 
 ### Benchmark Results
  
-All runs in Release mode.
- 
-Here are your updated README tables based on the new benchmark data you provided.
-
-The values have been formatted to match your previous style (`Time (ns)` using commas for readability, `Time (s)` rounded to 3 decimal places, and the `vs ikj` relative performance calculation using the total time values).
-
-A new section for **2000 × 2000** has also been added since your new data includes it.
-
-```
-
-
-### Benchmark Results
- 
 All runs in Release mode (`-O3 -march=native`).
 
 GCC auto-vectorization, AVX2, and FMA generation were previously verified; this benchmark focuses on the impact of cache blocking under those conditions.
@@ -309,10 +296,6 @@ GCC auto-vectorization, AVX2, and FMA generation were previously verified; this 
 | tiled(256)  | `4,515,183,908 ns`  | `4.515183 s`  | **~1.4× faster** |
 | tiled(512)  | `7,150,383,799 ns`  | `7.150383 s`  | **~1.1× slower** |
 
-
-
-```
- 
 ### Observations
 
 * For matrix sizes up to 1000×1000, the flat `ikj` kernel remained competitive with or faster than most tiled variants. At these sizes, tile management overhead offsets much of the potential cache benefit.
@@ -379,3 +362,104 @@ Full data for all block sizes (16–512) is in the tables at the top of this log
 - This confirms the hypothesis from V3: GCC's auto-vectorization under `-O3 -march=native` was already extracting most of the available SIMD throughput from the flat and tiled kernels. Hand-rolling the same 8-wide FMA pattern mostly just adds instruction overhead (broadcast, load/store shuffling) without giving the compiler anything new to exploit.
 - The best performer overall remains **plain tiled(256)** from V3 — manual SIMD tiling essentially reproduces its performance rather than surpassing it.
 - Practical takeaway: once the compiler is already vectorizing a memory/cache-bound kernel, further gains are far more likely to come from improving data locality (blocking, layout, prefetching) than from hand-written intrinsics. Manual SIMD is worth revisiting only if profiling shows the kernel is genuinely arithmetic-throughput-bound rather than memory-bound.
+
+---
+
+## GEMM V5 — Multiple Accumulators (Register Blocking) on `Gemm_tiled_simd`
+
+### Description
+
+Two variants of the tiled AVX2 SIMD kernel (`Gemm_tiled_simd`) were compared:
+
+- **Single accumulator** — same structure as V4's tiled SIMD kernel: one `__m256` accumulator loaded from `C`, updated with a single `_mm256_fmadd_ps` per `k`, and stored back.
+- **Multiple accumulators** — `k` is unrolled 4-wide inside each tile. Four independent `__m256` accumulators (`cs0`–`cs3`) are broadcast-FMA'd against 4 separate cached `A` scalars and 4 offset `B` rows before being tree-reduced (`cs0 += cs1`, `cs2 += cs3`, `cs0 += cs2`) and loaded/added/stored against `C` once per tile-column-chunk. A scalar cleanup loop handles both the `k` remainder (`k_end - 3`) and the `j` remainder (non-multiple-of-8 columns).
+
+```cpp
+// Gemm_tiled_simd — multiple accumulator inner loop
+for (; j < j_simd_end; j += 8) {
+    __m256 cs0 = _mm256_setzero_ps();
+    __m256 cs1 = _mm256_setzero_ps();
+    __m256 cs2 = _mm256_setzero_ps();
+    __m256 cs3 = _mm256_setzero_ps();
+    int k = k_t;
+    for (; k < k_end - 3; k += 4) {
+        __m256 as0 = _mm256_broadcast_ss(&a_cache[k]);
+        __m256 as1 = _mm256_broadcast_ss(&a_cache[k + 1]);
+        __m256 as2 = _mm256_broadcast_ss(&a_cache[k + 2]);
+        __m256 as3 = _mm256_broadcast_ss(&a_cache[k + 3]);
+        __m256 bs0 = _mm256_loadu_ps(&B[k * b_col + j]);
+        __m256 bs1 = _mm256_loadu_ps(&B[(k + 1) * b_col + j]);
+        __m256 bs2 = _mm256_loadu_ps(&B[(k + 2) * b_col + j]);
+        __m256 bs3 = _mm256_loadu_ps(&B[(k + 3) * b_col + j]);
+        cs0 = _mm256_fmadd_ps(as0, bs0, cs0);
+        cs1 = _mm256_fmadd_ps(as1, bs1, cs1);
+        cs2 = _mm256_fmadd_ps(as2, bs2, cs2);
+        cs3 = _mm256_fmadd_ps(as3, bs3, cs3);
+    }
+    cs0 = _mm256_add_ps(cs0, cs1);
+    cs2 = _mm256_add_ps(cs2, cs3);
+    cs0 = _mm256_add_ps(cs0, cs2);
+    // scalar cleanup for k remainder, then load/add/store against C
+}
+```
+
+`a_cache` (the `A` row for the current tile, hoisted before the `j` loop) and the 4-wide `k` unroll are the two changes over V4's single-accumulator tiled SIMD kernel; the tiling structure (`i_t → j_t → k_t`) is unchanged.
+
+> Note: the single-accumulator source was overwritten before this benchmark was logged, so only the multiple-accumulator source is shown above. The single-accumulator numbers below come from a benchmark run captured just before the overwrite.
+
+### Benchmark Results
+
+All runs in Release mode (`-O3 -march=native`). `vs single` compares the multi-accumulator kernel against the single-accumulator kernel at the same block size; `vs ikj` compares it against the flat auto-vectorized `ikj` kernel from the same run.
+
+#### 200 × 200 (ikj reference: `580,205 ns`)
+
+| Block Size | Single-Acc (ns) | Multi-Acc (ns) | Multi-Acc (s) | vs single         | vs ikj            |
+|------------|-----------------|----------------|---------------|--------------------|--------------------|
+| 16         | `631,227`       | `571,584`      | `0.000572 s`  | **~1.10× faster**  | **~1.02× faster**  |
+| 32         | `704,772`       | `434,532`      | `0.000435 s`  | **~1.62× faster**  | **~1.34× faster**  |
+| 64         | `778,470`       | `389,576`      | `0.000390 s`  | **~2.00× faster**  | **~1.49× faster**  |
+| 128        | `915,346`       | `412,510`      | `0.000413 s`  | **~2.22× faster**  | **~1.41× faster**  |
+| 256        | `1,078,019`     | `402,714`      | `0.000403 s`  | **~2.68× faster**  | **~1.44× faster**  |
+| 512        | `1,079,268`     | `388,951`      | `0.000389 s`  | **~2.77× faster**  | **~1.49× faster**  |
+
+#### 500 × 500 (ikj reference: `9,372,431 ns`)
+
+| Block Size | Single-Acc (ns) | Multi-Acc (ns) | Multi-Acc (s) | vs single         | vs ikj            |
+|------------|-----------------|----------------|---------------|--------------------|--------------------|
+| 16         | `11,039,781`    | `10,141,878`   | `0.010142 s`  | **~1.09× faster**  | **~0.92× slower**  |
+| 32         | `12,660,499`    | `7,917,220`    | `0.007917 s`  | **~1.60× faster**  | **~1.18× faster**  |
+| 64         | `13,115,085`    | `7,156,311`    | `0.007156 s`  | **~1.83× faster**  | **~1.31× faster**  |
+| 128        | `16,330,784`    | `9,456,308`    | `0.009456 s`  | **~1.73× faster**  | **~1.0× (even)**   |
+| 256        | `18,953,203`    | `9,281,310`    | `0.009281 s`  | **~2.04× faster**  | **~1.01× faster**  |
+| 512        | `20,353,890`    | `14,931,752`   | `0.014932 s`  | **~1.36× faster**  | **~0.63× slower**  |
+
+#### 1000 × 1000 (ikj reference: `76,302,111 ns`)
+
+| Block Size | Single-Acc (ns) | Multi-Acc (ns) | Multi-Acc (s) | vs single         | vs ikj            |
+|------------|-----------------|----------------|---------------|--------------------|--------------------|
+| 16         | `84,181,141`    | `72,499,780`   | `0.072500 s`  | **~1.16× faster**  | **~1.05× faster**  |
+| 32         | `105,490,119`   | `56,662,145`   | `0.056662 s`  | **~1.86× faster**  | **~1.35× faster**  |
+| 64         | `102,067,366`   | `49,119,969`   | `0.049120 s`  | **~2.08× faster**  | **~1.55× faster**  |
+| 128        | `125,864,587`   | `62,495,351`   | `0.062495 s`  | **~2.01× faster**  | **~1.22× faster**  |
+| 256        | `141,303,493`   | `59,594,291`   | `0.059594 s`  | **~2.37× faster**  | **~1.28× faster**  |
+| 512        | `153,617,211`   | `77,241,096`   | `0.077241 s`  | **~1.99× faster**  | **~0.99× (even)**  |
+
+#### 2000 × 2000 (ikj reference: `1,015,918,749 ns`)
+
+| Block Size | Single-Acc (ns)   | Multi-Acc (ns) | Multi-Acc (s) | vs single         | vs ikj            |
+|------------|-------------------|----------------|---------------|--------------------|--------------------|
+| 16         | `875,529,879`     | `568,968,422`  | `0.568968 s`  | **~1.54× faster**  | **~1.79× faster**  |
+| 32         | `814,355,555`     | `516,283,337`  | `0.516283 s`  | **~1.58× faster**  | **~1.97× faster**  |
+| 64         | `802,685,616`     | `398,143,148`  | `0.398143 s`  | **~2.02× faster**  | **~2.55× faster**  |
+| 128        | `1,000,898,464`   | `525,910,886`  | `0.525911 s`  | **~1.90× faster**  | **~1.93× faster**  |
+| 256        | `1,124,680,152`   | `527,080,284`  | `0.527080 s`  | **~2.13× faster**  | **~1.93× faster**  |
+| 512        | `1,230,355,214`   | `605,648,695`  | `0.605649 s`  | **~2.03× faster**  | **~1.68× faster**  |
+
+### Observations
+
+- Multiple accumulators are a clear, consistent win over the single-accumulator kernel at every block size and every matrix size — typically **~1.5–2.8× faster**, with the effect growing at larger block sizes (256, 512) where a single accumulator previously suffered the most from latency stalls on the FMA dependency chain.
+- `block(64)` is the standout: it's the best or near-best multi-accumulator result at every single matrix size, and it's the first configuration in this whole log to consistently beat the flat auto-vectorized `ikj` kernel across **all** sizes (200 through 2000), not just at the largest size like V3/V4's tiling did.
+- At 2000×2000, `block(64)` multi-accumulator hits **~2.55× faster than `ikj`** — the largest margin recorded so far in this project, and a jump from V4's best flat-SIMD result of only ~1.2× at the same size.
+- At small/medium block sizes (16, and to a lesser extent 128), the multi-accumulator kernel underperforms relative to its own potential and is occasionally slower than `ikj` (500×500 block 16, block 512) — likely because with only 4 iterations of unroll, small blocks don't have enough `k` depth to amortize the setup cost, and very large blocks (512) start pushing the working tile out of L1/L2 again.
+- This confirms the core hypothesis behind register blocking: the single-accumulator FMA chain was latency-bound (each `fmadd` must wait for the previous one to retire before starting), while 4 independent accumulators let the CPU pipeline multiple FMAs in flight, closer to saturating the port's throughput rather than its latency.
+- Next step: since `block(64)` with 4-wide accumulation is already the best result in the log, the natural continuation is to try wider unrolling (8 accumulators) and/or 2D register blocking (multiple accumulators across both `i` and `j`, not just `k`) to see if there's more latency-hiding headroom left, per the Salykova GEMM approach.

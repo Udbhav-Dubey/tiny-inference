@@ -107,24 +107,24 @@ void run_multi(int ar,int ac,int br,int bc,int&turn,int block_size=0,int t2i=0){
 }
 int main(){
     int turn=1; // if 0 then do ikj if 1 do ijk   if 3 do tiled  if 2 do simd 4 for simd_tiled
-/*    std::cout << "for ijk \n";
+    std::cout << "for ijk \n";
     run_multi(200,200,200,200,turn);
     run_multi(500,500,500,500,turn);
     run_multi(1000,1000,1000,1000,turn);
     run_multi(2000,2000,2000,2000,turn);
-  */  std::cout << "\nfor ikj \n";
+    std::cout << "\nfor ikj \n";
     turn=0;
     run_multi(200,200,200,200,turn);
     run_multi(500,500,500,500,turn);
     run_multi(1000,1000,1000,1000,turn);
     run_multi(2000,2000,2000,2000,turn);
-/*    turn=2;
+   turn=2;
     std::cout << "\nfor simd\n";
     run_multi(200,200,200,200,turn);
     run_multi(500,500,500,500,turn);
     run_multi(1000,1000,1000,1000,turn);
     run_multi(2000,2000,2000,2000,turn);
-  */  turn =3;
+    turn =3;
     int idx=0;
     for (int i=16;i<=512;i*=2,idx++){
     std::cout << "\nfor tiled "<< i <<"  block size \n";

@@ -66,22 +66,11 @@ Tensor Gemm_tiled(Tensor&a,Tensor&b,int block_size){
                const int k_end=std::min(k_t+block_size,a_col);
                const int j_end=std::min(block_size+j_t,b_col);
                for (int i=i_t;i<i_end;i++){
+                for (int k=k_t;k<k_end;k++){
+                        float ak=A[i*a_col+k];
                     for (int j=j_t;j<j_end;j++){
-                        float acc0=0,acc1=0,acc2=0,acc3=0;
-                        int k=k_t;
-                        const float *a_cache=&A[i*a_col];
-                for (;k<k_end-3;k+=4){
-                        acc0+=a_cache[k]*B[k*b_col+j];
-                        acc1+=a_cache[k+1]*B[(k+1)*b_col+j];
-                        acc2+=a_cache[k+2]*B[(k+2)*b_col+j];
-                        acc3+=a_cache[k+3]*B[(k+3)*b_col+j];
-                        
-                        }
-                float acc=C[i*b_col+j]+acc0+acc1+acc2+acc3;
-                for (;k<k_end;k++){
-                acc+=A[i*a_col+k]*B[k*b_col+j];
-                }
-                C[i*b_col+j]=acc;
+                        C[i*b_col+j]+=ak*B[k*b_col+j];
+                    }
                 }
                }
             }
@@ -89,6 +78,7 @@ Tensor Gemm_tiled(Tensor&a,Tensor&b,int block_size){
     }
     return c;
 }
+
 Tensor Gemm_simd(Tensor&a,Tensor&b){
     const float*A=a.data();
     const float*B=b.data();
@@ -184,4 +174,34 @@ Tensor Gemm_tiled_simd(Tensor&a,Tensor&b,int block_size){
     }
     return c;
 }
-
+Tensor Gemm_tiled_scaler(Tensor&a,Tensor&b,int block_size){
+    const float* A=a.data();
+    const float* B=b.data();
+    const int a_row=a.grow();
+    const int b_row=b.grow();
+    const int a_col=a.gcol();
+    const int b_col=b.gcol();
+    assert(a_col==b_row&&"need to get a.col==b.row equal for matrix multiply");
+    Tensor c(a_row,b_col);
+    float*C=c.data();
+    for (int i_t=0;i_t<a_row;i_t+=block_size){
+        for (int j_t=0;j_t<b_col;j_t+=block_size){
+            // here take C[i,j];
+            for (int k_t=0;k_t<a_col;k_t+=block_size){
+               // here take A[i,k]and B[k,j];
+               const int i_end=std::min(block_size+i_t,a_row);
+               const int k_end=std::min(k_t+block_size,a_col);
+               const int j_end=std::min(block_size+j_t,b_col);
+               for (int i=i_t;i<i_end;i++){
+                for (int k=k_t;k<k_end;k++){
+                        float ak=A[i*a_col+k];
+                    for (int j=j_t;j<j_end;j++){
+                        C[i*b_col+j]+=ak*B[k*b_col+j];
+                    }
+                }
+               }
+            }
+        }
+    }
+    return c;
+}
