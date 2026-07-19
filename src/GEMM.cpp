@@ -123,57 +123,51 @@ Tensor Gemm_tiled_simd(Tensor&a,Tensor&b,int block_size){
                const int i_end=std::min(block_size+i_t,a_row);
                const int k_end=std::min(k_t+block_size,a_col);
                const int j_end=std::min(block_size+j_t,b_col);
-               for (int i=i_t;i<i_end;i++){
+               int i=i_t;
+            int i_simd_end = i_end - ((i_end - i_t) % 2);
+               for (;i<i_simd_end;i+=2){
                     int j=j_t;
                     int j_simd_end=j_end-((j_end-j_t)%8);
-                            const float *a_cache=&A[i*a_col];
-                for (;j<j_simd_end;j+=8){
-                             __m256 cs0=_mm256_setzero_ps();
-                             __m256 cs1=_mm256_setzero_ps();
-                             __m256 cs2=_mm256_setzero_ps();
-                             __m256 cs3=_mm256_setzero_ps();
-                                 int k=k_t;
-                     for (;k<k_end-3;k+=4){
+                        for (;j<j_simd_end;j+=8){
+                             __m256 c0=_mm256_loadu_ps(&C[i*b_col+j]);
+                             __m256 c1=_mm256_loadu_ps(&C[(i+1)*b_col+j]);
+                     for (int k=k_t;k<k_end;k++){
            //                 float ak=A[i*a_col+k];
              //               __m256 as=_mm256_set1_ps(ak);
-                            __m256 as0=_mm256_broadcast_ss(&a_cache[k]);
-                            __m256 as1=_mm256_broadcast_ss(&a_cache[k+1]);  
-                            __m256 as2=_mm256_broadcast_ss(&a_cache[k+2]);
-                            __m256 as3=_mm256_broadcast_ss(&a_cache[k+3]);
-                            __m256 bs0=_mm256_loadu_ps(&B[k*b_col+j]);
-                            __m256 bs1=_mm256_loadu_ps(&B[(k+1)*b_col+j]);
-                            __m256 bs2=_mm256_loadu_ps(&B[(k+2)*b_col+j]);
-                             __m256 bs3=_mm256_loadu_ps(&B[(k+3)*b_col+j]);
-                            cs0=_mm256_fmadd_ps(as0,bs0,cs0);
-                            cs1=_mm256_fmadd_ps(as1,bs1,cs1);
-                            cs2=_mm256_fmadd_ps(as2,bs2,cs2);
-                            cs3=_mm256_fmadd_ps(as3,bs3,cs3);
+                            __m256 b0=_mm256_loadu_ps(&B[k*b_col+j]);
+                            __m256 a0=_mm256_set1_ps(A[i*a_col+k]);
+                            __m256 a1=_mm256_set1_ps(A[(i+1)*a_col+k]);
+                            c0=_mm256_fmadd_ps(a0,b0,c0);
+                            c1=_mm256_fmadd_ps(a1,b0,c1);
                         }
-                        cs0=_mm256_add_ps(cs0,cs1);
-                        cs2=_mm256_add_ps(cs2,cs3);
-                        cs0=_mm256_add_ps(cs0,cs2);
-                        for (;k<k_end;k++){
-                            __m256 as=_mm256_broadcast_ss(&a_cache[k]);
-                            __m256 bs=_mm256_loadu_ps(&B[k*b_col+j]);
-                            cs0=_mm256_fmadd_ps(as,bs,cs0);
-                        }
-                        __m256 c_=_mm256_loadu_ps(&C[i*b_col+j]);
-                        cs0=_mm256_add_ps(cs0,c_);
-                        _mm256_storeu_ps(&C[i*b_col+j],cs0);
-                }
-                        for (;j<j_end;j++){
-                            float acc=C[i*b_col+j];
-                            for (int k=k_t;k<k_end;k++){
-                        acc+=A[i*a_col+k]*B[k*b_col+j];
-                            }
-                            C[i*b_col+j]=acc;
-                        }
+                     _mm256_storeu_ps(&C[i*b_col+j],c0);
+                     _mm256_storeu_ps(&C[(i+1)*b_col+j],c1);
                }
+                    for (;j<j_end;j++){
+                    float acc0 = C[i*b_col+j];
+                    float acc1 = C[(i+1)*b_col+j];
+                   for(int k=k_t;k<k_end;k++){
+                    acc0+=A[i*a_col+k]*B[k*b_col+j];
+                    acc1+=A[(i+1)*a_col+k]*B[k*b_col+j];
+                }
+                    C[i*b_col+j]=acc0;
+                    C[(i+1)*b_col+j]=acc1;
             }
+            }
+               for (;i<i_end;i++){
+                 for (int j = j_t; j < j_end; j++) {
+                float acc=C[i*b_col+j];
+                for (int k=k_t; k < k_end; k++)
+                acc +=A[i*a_col+k]*B[k*b_col+j];
+                C[i*b_col+j]=acc;
+            }      
+         }
         }
+    }
     }
     return c;
 }
+
 Tensor Gemm_tiled_scaler(Tensor&a,Tensor&b,int block_size){
     const float* A=a.data();
     const float* B=b.data();
@@ -192,12 +186,28 @@ Tensor Gemm_tiled_scaler(Tensor&a,Tensor&b,int block_size){
                const int i_end=std::min(block_size+i_t,a_row);
                const int k_end=std::min(k_t+block_size,a_col);
                const int j_end=std::min(block_size+j_t,b_col);
-               for (int i=i_t;i<i_end;i++){
+               for (int i=i_t;i<i_end;i+=2){
+                    for (int j=j_t;j<j_end;j+=2){
+                        float c00=0;
+                        float c01=0;
+                        float c10=0;
+                        float c11=0;
+                 //       float ak1=A[i*a_col+k]; what can we cache here we can load once might improve
+                   //     float ak2=A[(i+1)*a_col+k]; 
                 for (int k=k_t;k<k_end;k++){
-                        float ak=A[i*a_col+k];
-                    for (int j=j_t;j<j_end;j++){
-                        C[i*b_col+j]+=ak*B[k*b_col+j];
+                        float a00=A[i*a_col+k];
+                        float a10=A[(i+1)*a_col+k];
+                        float b00=B[k*b_col+j];
+                        float b01=B[k*b_col+(j+1)];
+                        c00+=a00*b00;
+                        c01+=a00*b01;
+                        c10+=a10*b00;
+                        c11+=a10*b01;
                     }
+                        C[i*b_col+j]+=c00;
+                        C[i*b_col+(j+1)]+=c01;
+                        C[(i+1)*b_col+j]+=c10;
+                        C[(i+1)*b_col+(j+1)]+=c11;
                 }
                }
             }

@@ -101,6 +101,10 @@ add_executable(test_gemm_simd2
 add_executable(test_gemm_tiled_simd
     test/tiling1.cpp
 )
+add_executable(test_gemm_simd_2
+    test/gemm_test6.cpp
+)
+target_link_libraries(test_gemm_simd_2 PRIVATE tensor)
 target_link_libraries(test_gemm_tiled_simd PRIVATE tensor)
 target_link_libraries(test_gemm_simd2 PRIVATE tensor)
 target_link_libraries(test_gemm_simd PRIVATE tensor)
