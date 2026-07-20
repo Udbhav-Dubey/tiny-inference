@@ -567,3 +567,106 @@ These are cheap, localized changes — not a rearchitecture — that typically s
 7. **Recompute `i_simd_end`/`j_simd_end` bounds once outside the `k_t` loop, not per `k_t` block.** They only depend on `i_end`/`j_end`/`i_t`/`j_t`, none of which change across the `k_t` loop — currently harmless but redundant work sitting inside the hottest loop nest.
 
 None of these change the algorithm's asymptotic behavior — they're the kind of thing you'd check with a profiler or a look at the assembly to confirm they actually moved the needle, rather than assuming they will.
+
+---
+
+## GEMM V7 — Combined 2-Row Blocking + 4-Wide K-Unroll (8 Accumulators) on `Gemm_tiled_simd`
+
+### Description
+
+V7 combines V6's 2D register blocking (2 output rows per tile) with V5's k-unrolling (4-wide), rather than picking one axis or the other. For each 2×8 tile, `k` is unrolled 4 deep with **8 total accumulators** — 4 k-slices × 2 rows (`c00..c03` for row `i`, `c10..c13` for row `i+1`) — each slice loading its own `B` vector and broadcasting its own `A` scalar for both rows, then tree-reduced (`c00 += c01 += c02 += c03`, same for row `i+1`) before a single load/add/store against the existing `C` tile.
+
+```cpp
+// Gemm_tiled_simd — 2-row × 4-wide-k-unroll inner loop (8 accumulators)
+__m256 c00=_mm256_setzero_ps(), c01=_mm256_setzero_ps();
+__m256 c02=_mm256_setzero_ps(), c03=_mm256_setzero_ps();
+__m256 c10=_mm256_setzero_ps(), c11=_mm256_setzero_ps();
+__m256 c12=_mm256_setzero_ps(), c13=_mm256_setzero_ps();
+int k = k_t;
+for (; k < k_end - 3; k += 4) {
+    __m256 b0 = _mm256_loadu_ps(&B[k * b_col + j]);
+    __m256 a00 = _mm256_set1_ps(A[i * a_col + k]);
+    __m256 a10 = _mm256_set1_ps(A[(i + 1) * a_col + k]);
+    c00 = _mm256_fmadd_ps(a00, b0, c00);
+    c10 = _mm256_fmadd_ps(a10, b0, c10);
+    // ...repeated for k+1 (b1/a01/a11 -> c01/c11), k+2 -> c02/c12, k+3 -> c03/c13
+}
+c00 = _mm256_add_ps(c00, c01); c00 = _mm256_add_ps(c00, c02); c00 = _mm256_add_ps(c00, c03);
+c10 = _mm256_add_ps(c10, c11); c10 = _mm256_add_ps(c10, c12); c10 = _mm256_add_ps(c10, c13);
+
+// scalar-vector remainder for k not a multiple of 4, accumulating into c00/c10
+for (; k < k_end; k++) {
+    __m256 ar0 = _mm256_broadcast_ss(&A[i * a_col + k]);
+    __m256 br0 = _mm256_loadu_ps(&B[k * b_col + j]);
+    __m256 ar1 = _mm256_broadcast_ss(&A[(i + 1) * a_col + k]);
+    c00 = _mm256_fmadd_ps(ar0, br0, c00);
+    c10 = _mm256_fmadd_ps(ar1, br0, c10);
+}
+
+// single load/add/store against C, once per tile — not per k-slice
+__m256 c_old  = _mm256_loadu_ps(&C[i * b_col + j]);
+__m256 c_old1 = _mm256_loadu_ps(&C[(i + 1) * b_col + j]);
+c00 = _mm256_add_ps(c00, c_old);
+c10 = _mm256_add_ps(c10, c_old1);
+_mm256_storeu_ps(&C[i * b_col + j], c00);
+_mm256_storeu_ps(&C[(i + 1) * b_col + j], c10);
+```
+
+> **Debugging note:** an earlier draft of this kernel tried to store each of the 4 k-slices (`c00`–`c03`) into 4 *different* output columns (`j`, `j+1`, `j+2`, `j+3`), as if `b0..b3` were separate 8-wide column groups rather than separate k-slices of the *same* 8 columns. That's incorrect — all 4 slices contribute partial sums to the same `C[i][j..j+7]` tile and must be tree-reduced and stored once, not scattered across 4 column offsets. Fixed by summing all 4 accumulators per row before the single load/add/store at the end of the `k` loop.
+
+### Benchmark Results
+
+All runs in Release mode (`-O3 -march=native`). GFLOPS = `(2 × M × N × K) / time_ns`, added starting this version.
+
+#### 200 × 200 (ikj reference: `515,058 ns`)
+
+| Block Size | Time (ns) | Time (s)     | GFLOPS  | vs ikj            | vs V6 (2×8, no k-unroll) |
+|------------|-----------|--------------|---------|--------------------|---------------------------|
+| 16         | `454,749` | `0.000455 s` | `35.18` | **~1.13× faster**  | ~0.73× (slower)           |
+| 32         | `301,587` | `0.000302 s` | `53.05` | **~1.71× faster**  | **~1.18× faster**         |
+| 64         | `267,108` | `0.000267 s` | `59.90` | **~1.93× faster**  | **~1.32× faster**         |
+| 128        | `281,413` | `0.000281 s` | `56.86` | **~1.83× faster**  | **~1.49× faster**         |
+| 256        | `269,322` | `0.000269 s` | `59.41` | **~1.91× faster**  | **~1.73× faster**         |
+| 512        | `274,400` | `0.000274 s` | `58.31` | **~1.88× faster**  | **~1.70× faster**         |
+
+#### 500 × 500 (ikj reference: `7,871,567 ns`)
+
+| Block Size | Time (ns)   | Time (s)     | GFLOPS  | vs ikj            | vs V6            |
+|------------|-------------|--------------|---------|--------------------|-------------------|
+| 16         | `6,016,434` | `0.006016 s` | `41.55` | **~1.31× faster**  | ~0.99× (even)     |
+| 32         | `4,622,046` | `0.004622 s` | `54.09` | **~1.70× faster**  | **~1.31× faster** |
+| 64         | `4,122,187` | `0.004122 s` | `60.65` | **~1.91× faster**  | **~1.42× faster** |
+| 128        | `4,657,286` | `0.004657 s` | `53.68` | **~1.69× faster**  | **~1.56× faster** |
+| 256        | `4,742,424` | `0.004742 s` | `52.72` | **~1.66× faster**  | **~1.66× faster** |
+| 512        | `6,879,502` | `0.006880 s` | `36.34` | **~1.14× faster**  | **~1.22× faster** |
+
+#### 1000 × 1000 (ikj reference: `64,129,750 ns`)
+
+| Block Size | Time (ns)    | Time (s)     | GFLOPS  | vs ikj            | vs V6            |
+|------------|--------------|--------------|---------|--------------------|-------------------|
+| 16         | `49,371,394` | `0.049371 s` | `40.51` | **~1.30× faster**  | ~0.88× (slower)   |
+| 32         | `40,691,193` | `0.040691 s` | `49.15` | **~1.58× faster**  | **~1.15× faster** |
+| 64         | `34,406,840` | `0.034407 s` | `58.13` | **~1.86× faster**  | **~1.34× faster** |
+| 128        | `39,004,253` | `0.039004 s` | `51.28` | **~1.64× faster**  | **~1.44× faster** |
+| 256        | `39,204,554` | `0.039205 s` | `51.01` | **~1.64× faster**  | **~1.53× faster** |
+| 512        | `61,649,795` | `0.061650 s` | `32.44` | **~1.04× faster**  | **~1.04× faster** |
+
+#### 2000 × 2000 (ikj reference: `1,106,575,782 ns`)
+
+| Block Size | Time (ns)     | Time (s)     | GFLOPS  | vs ikj            | vs V6            |
+|------------|---------------|--------------|---------|--------------------|-------------------|
+| 16         | `593,383,647` | `0.593384 s` | `26.96` | **~1.86× faster**  | ~0.93× (slower)   |
+| 32         | `382,655,389` | `0.382655 s` | `41.81` | **~2.89× faster**  | **~1.13× faster** |
+| 64         | `284,390,160` | `0.284390 s` | `56.26` | **~3.89× faster**  | **~1.30× faster** |
+| 128        | `311,026,126` | `0.311026 s` | `51.44` | **~3.56× faster**  | **~1.45× faster** |
+| 256        | `314,561,148` | `0.314561 s` | `50.86` | **~3.52× faster**  | **~1.50× faster** |
+| 512        | `490,152,626` | `0.490153 s` | `32.64` | **~2.26× faster**  | **~1.06× faster** |
+
+### Observations
+
+- **`block(64)` is now the best result across every single matrix size in the entire project**, hitting **~3.89× faster than `ikj`** and **~60 GFLOPS** at 2000×2000 — a clear jump over V6's best of ~2.33× at the same size. This confirms combining both blocking axes (rows *and* k) beats either one alone.
+- The GFLOPS column makes the picture much clearer than raw ns ever did: `block(64)` sits at **56–60 GFLOPS across all four matrix sizes**, meaning it's not just "fast at 2000×2000" — it's consistently hitting close to its ceiling regardless of problem size, which is exactly the property a well-tuned microkernel should have.
+- `block(16)` is now consistently the *worst* SIMD-tiled option at every size (even underperforming V6's block16, which used to be the best small-matrix choice) — the 4-wide k-unroll needs enough `k` depth per tile to pay for its own setup, and a 16-deep tile doesn't give it much room. This is the opposite pattern from V6, where smaller blocks won for smaller matrices.
+- `block(512)` also regresses at every size (worst or near-worst GFLOPS in the table) — same story as V5/V6: 8 live `__m256` accumulators plus a 512-deep tile pushes working data out of L1/L2, and the tile is too large to re-load efficiently by the time you loop back to it.
+- The sweet spot has stabilized around **block 64–256**, which is the first version where the "good" block-size range is wide and forgiving rather than a narrow peak — a sign the kernel is now bottlenecked less by tiling mechanics and more by genuine compute/bandwidth trade-offs.
+- Next candidates, in rough order of expected payoff: (1) the `__restrict`/pointer-hoisting micro-optimizations listed under V6 (not yet applied here — free wins likely still on the table), (2) widening from 2 rows to 4 rows (4×8 microkernel, 16 accumulators — check register pressure doesn't spill first), (3) prefetching at the tile boundary, especially to rescue the block(512) regression.
