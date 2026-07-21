@@ -20,9 +20,9 @@ void printit(float*x){
     std::cout << " \n";
 }
 int main (){
-    int a1=8;
-    int a2=24;
-    int a3=16;
+    int a1=17;
+    int a2=13;
+    int a3=19;
         Tensor A(a1,a2);
     for (int i=0;i<a1;i++){
        for (int j=0;j<a2;j++){
@@ -37,7 +37,7 @@ int main (){
     }
     Tensor C1 = Gemm_ijk(A,B);
  //   std::cout << "here\n";
-    Tensor C2=Gemm_tiled_simd(A,B,2);
+    Tensor C2=Gemm_tiled_scaler(A,B,4);
     std::cout << "c1:\n";
     printit(C1);
     std::cout << "c2 : \n";
@@ -45,8 +45,8 @@ int main (){
    std::vector<float>tf=C2.get_mem_array();
     std::cout << "printing the mem_array() \n";
     std::pair<int,int>sze=C2.get_size2d();
-float max_error = 0.0f;
-for (int i=0;i<tf.size();i++){
+    float max_error = 0.0f;
+    for (int i=0;i<tf.size();i++){
         max_error = std::max(max_error, std::abs(C1.get_val(i) - C2.get_val(i)));
         std::cout << max_error << '\n';
       //  if (i%sze.second==0){std::cout << "\n";}

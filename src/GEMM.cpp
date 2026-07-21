@@ -48,6 +48,7 @@ Tensor Gemm_ijk(Tensor&a,Tensor&b){
         return c;
     }
 Tensor Gemm_tiled(Tensor&a,Tensor&b,int block_size){
+    assert(block_size>=2&&block_size%2==0&&"block_size must be an even number and >= 2");
     const float* A=a.data();
     const float* B=b.data();
     const int a_row=a.grow();
@@ -108,6 +109,7 @@ Tensor Gemm_simd(Tensor&a,Tensor&b){
     return c;
 }
 Tensor Gemm_tiled_simd(Tensor&a,Tensor&b,int block_size){
+    assert(block_size>=2&&block_size%2==0&&"block_size must be an even number and >= 2");
     const float* A=a.data();
     const float* B=b.data();
     const int a_row=a.grow();
@@ -302,7 +304,7 @@ Tensor Gemm_tiled_scaler(Tensor&a,Tensor&b,int block_size){
                             C[(i + 1) * b_col + j]+= c10;
                             C[(i + 1) * b_col + (j + 1)]+= c11;
                }
-                    if (j_end&1){
+                    if ((j_end-j_t)&1){
                         int j=j_end-1;
                         float sum0=0.0f;
                         float sum1=0.0f;
@@ -317,7 +319,7 @@ Tensor Gemm_tiled_scaler(Tensor&a,Tensor&b,int block_size){
                         C[(i+1)*b_col+j]+=sum1;
                     }
             }
-               if(i_end&1){
+               if((i_end-i_t)&1){
                     int i=i_end-1;
                     for (int j=j_t;j+1 < j_end; j += 2){
                     float sum0 = 0.0f;
@@ -332,7 +334,7 @@ Tensor Gemm_tiled_scaler(Tensor&a,Tensor&b,int block_size){
                         C[i*b_col+j]+= sum0;
                         C[i*b_col+j+1]+= sum1;
                }
-               if (j_end & 1){
+               if ((j_end-j_t)&1){
                     int j = j_end - 1;
                     float sum = 0.0f;
                     for (int k = k_t; k < k_end; ++k)

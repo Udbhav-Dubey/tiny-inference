@@ -65,7 +65,7 @@ void run_multi(int ar,int ac,int br,int bc,int&turn,int block_size=0,int t2i=0){
     auto start=std::chrono::high_resolution_clock::now();
     for (int i=0;i<ntgmr;i++){
       if (turn==0){ C=Gemm(A,B); }
-      else if (turn==3){C=Gemm_tiled(A,B,block_size);}
+      else if (turn==3){C=Gemm_tiled_scaler(A,B,block_size);}
       else if (turn==2){C=Gemm_simd(A,B);}
       else if (turn==4){C=Gemm_tiled_simd(A,B,block_size);}
       else {C=Gemm_ijk(A,B);}
