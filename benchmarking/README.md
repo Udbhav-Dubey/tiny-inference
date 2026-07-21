@@ -14,6 +14,14 @@ The goal is to measure the impact of optimizations rather than relying on intuit
 
 - **C++20**
 
+> **Note on build mode:** every benchmark table in this document is measured in Release mode (`-O3 -march=native`) unless stated otherwise. This isn't boilerplate — a debug-mode run (no optimization flags) at the same sizes doesn't just get uniformly slower, it *inverts* some of the conclusions above:
+> - Flat `ikj`/`ijk` lose 25–40× (they depend entirely on the compiler auto-vectorizing; without `-O3` that never happens, so they fall back to pure scalar, bounds-checked code).
+> - Hand-written intrinsics kernels (`simd`, `simd tiled`) only lose ~7–14×, because the vectorization is explicit in the source rather than something the compiler needs to discover.
+> - The `ikj` vs `ijk` gap (huge in Release, from cache-locality-driven auto-vectorization) nearly disappears in debug — both get swamped by a much larger constant per-iteration overhead (uninlined accessor calls, no register allocation), so the *locality* advantage is still real, it's just a small fraction of a bigger number.
+> - The best block size for V7's kernel flips from `64` (Release) to `256` (debug) at 2000×2000 — a different bottleneck (per-tile-entry overhead vs. cache locality) picks a different optimum.
+>
+> Moral: never benchmark or tune block sizes in debug builds — the numbers aren't just slower, they can point you at the wrong answer.
+
 ---
 
 ## GEMM V0 — Baseline

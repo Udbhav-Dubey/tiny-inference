@@ -20,9 +20,9 @@ void printit(float*x){
     std::cout << " \n";
 }
 int main (){
-    int a1=17;
-    int a2=13;
-    int a3=19;
+    int a1=37;
+    int a2=53;
+    int a3=51;
         Tensor A(a1,a2);
     for (int i=0;i<a1;i++){
        for (int j=0;j<a2;j++){
@@ -37,7 +37,7 @@ int main (){
     }
     Tensor C1 = Gemm_ijk(A,B);
  //   std::cout << "here\n";
-    Tensor C2=Gemm_tiled_scaler(A,B,4);
+    Tensor C2=Gemm_tiled_simd(A,B,16);
     std::cout << "c1:\n";
     printit(C1);
     std::cout << "c2 : \n";

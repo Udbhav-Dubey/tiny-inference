@@ -119,18 +119,27 @@ Tensor Gemm_tiled_simd(Tensor&a,Tensor&b,int block_size){
     assert(a_col==b_row&&"need to get a.col==b.row equal for matrix multiply");
     Tensor c(a_row,b_col);
     float*C=c.data();
-    for (int i_t=0;i_t<a_row;i_t+=block_size){
-        for (int j_t=0;j_t<b_col;j_t+=block_size){
-            for (int k_t=0;k_t<a_col;k_t+=block_size){
-               const int i_end=std::min(block_size+i_t,a_row);
-               const int k_end=std::min(k_t+block_size,a_col);
-               const int j_end=std::min(block_size+j_t,b_col);
-               int i=i_t;
-            int i_simd_end = i_end - ((i_end - i_t) % 2);
-               for (;i<i_simd_end;i+=2){
-                    int j=j_t;
-                    int j_simd_end=j_end-((j_end-j_t)%8);
-                        for (;j<j_simd_end;j+=8){
+     Tensor b_pack(block_size,block_size);
+    float*B_pack=b_pack.data();
+    for (int k_t=0;k_t<a_col;k_t+=block_size){
+            for (int j_t=0;j_t<b_col;j_t+=block_size){
+                for (int k1=0;k1<block_size;k1++){
+                    for (int j1=0;j1<block_size;j1++){
+                        B_pack[k1*block_size+j1]=B[(k_t+k1)*b_col+(j_t+j1)];
+                        }
+                    }
+
+               for (int i_t=0;i_t<a_row;i_t+=block_size){
+                const int i_end=std::min(block_size+i_t,a_row);
+                const int k_end=std::min(k_t+block_size,a_col);
+                const int j_end=std::min(block_size+j_t,b_col);
+                int i=i_t;
+                int i_simd_end = i_end - ((i_end - i_t) % 2);
+                    for (;i<i_simd_end;i+=2){
+                        int j=j_t;
+                        int j_simd_end=j_end-((j_end-j_t)%8);
+                       for (;j<j_simd_end;j+=8){
+                     
                              __m256 c00=_mm256_setzero_ps();
                              __m256 c01=_mm256_setzero_ps();
                              __m256 c02=_mm256_setzero_ps();
@@ -144,22 +153,26 @@ Tensor Gemm_tiled_simd(Tensor&a,Tensor&b,int block_size){
                      for (;k<k_end-3;k+=4){
            //                 float ak=A[i*a_col+k];
              //               __m256 as=_mm256_set1_ps(ak);
-                            __m256 b0=_mm256_loadu_ps(&B[k*b_col+j]);
+                        //    __m256 b0=_mm256_loadu_ps(&B[k*b_col+j]);
+                            __m256 b0=_mm256_loadu_ps(&B_pack[(k-k_t)*block_size+(j-j_t)]);
                             __m256 a00=_mm256_set1_ps(A[i*a_col+k]);
                             __m256 a10=_mm256_set1_ps(A[(i+1)*a_col+k]);
                             c00=_mm256_fmadd_ps(a00,b0,c00);
                             c10=_mm256_fmadd_ps(a10,b0,c10);
-                            __m256 b1=_mm256_loadu_ps(&B[(k+1)*b_col+j]);
+                            //__m256 b1=_mm256_loadu_ps(&B[(k+1)*b_col+j]);
+                            __m256 b1=_mm256_loadu_ps(&B_pack[((k-k_t)+1)*block_size+(j-j_t)]);
                             __m256 a01=_mm256_set1_ps(A[i*a_col+(k+1)]);
                             __m256 a11=_mm256_set1_ps(A[(i+1)*a_col+(k+1)]);
                             c01=_mm256_fmadd_ps(a01,b1,c01);
                             c11=_mm256_fmadd_ps(a11,b1,c11);
-                            __m256 b2=_mm256_loadu_ps(&B[(k+2)*b_col+j]);
+                            //__m256 b2=_mm256_loadu_ps(&B[(k+2)*b_col+j]);
+                            __m256 b2=_mm256_loadu_ps(&B_pack[((k-k_t)+2)*block_size+(j-j_t)]);
                             __m256 a02=_mm256_set1_ps(A[i*a_col+(k+2)]);
                             __m256 a12=_mm256_set1_ps(A[(i+1)*a_col+(k+2)]);
                             c02=_mm256_fmadd_ps(a02,b2,c02);
                             c12=_mm256_fmadd_ps(a12,b2,c12);
-                            __m256 b3=_mm256_loadu_ps(&B[(k+3)*b_col+j]);
+                            //__m256 b3=_mm256_loadu_ps(&B[(k+3)*b_col+j]);
+                            __m256 b3=_mm256_loadu_ps(&B_pack[((k-k_t)+3)*block_size+(j-j_t)]);
                             __m256 a03=_mm256_set1_ps(A[i*a_col+(k+3)]);
                             __m256 a13=_mm256_set1_ps(A[(i+1)*a_col+(k+3)]);
                             c03=_mm256_fmadd_ps(a03,b3,c03);
@@ -347,4 +360,3 @@ Tensor Gemm_tiled_scaler(Tensor&a,Tensor&b,int block_size){
         }}
     return c;
 }
-
