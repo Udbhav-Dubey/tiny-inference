@@ -98,15 +98,17 @@ A minimal 2D float32 tensor with move-only semantics (copy constructor and copy 
 
 ### GEMM — `src/GEMM.{h,cpp}`
 
-Three kernel variants, all benchmarked:
+What started as three straightforward kernel variants grew into a full hand-written optimization progression once the naive versions plateaued against the compiler's auto-vectorizer:
 
 | Variant | Description |
 |---|---|
 | `Gemm_ijk` | ijk loop order with a local `sum` accumulator — eliminates per-iteration read-modify-write on `C` |
 | `Gemm_ikj` | ikj loop order with raw pointer access — hoists `A[i,k]` out of the inner loop, cache-friendly sequential access on `B` and `C` |
 | `Gemm_tiled` | Cache-blocked tiling with configurable `block_size` — same ikj inner order, keeps tiles in L1/L2 across the outer loops |
+| `Gemm_simd` | Hand-written AVX2 intrinsics (`_mm256_fmadd_ps`), flat `ikj` order, no tiling |
+| `Gemm_tiled_simd` | Cache-blocked tiling + hand-written AVX2, evolved through several register-blocking strategies (single accumulator → k-unrolled multiple accumulators → 2D row/column blocking → combined 2-row × 4-wide-k-unroll microkernel with 8 live accumulators) |
 
-The inference binary uses `Gemm_tiled(256)` — see the benchmarking section below.
+The inference binary currently uses `Gemm_tiled(256)` — see the benchmarking section below for why the fully hand-tuned `Gemm_tiled_simd` variant (currently the fastest kernel measured) hasn't been swapped in yet.
 
 ---
 
@@ -139,18 +141,22 @@ The most methodical part of this project. Every change was benchmarked before an
 | V2a — raw pointers (debug) | Bypass Tensor API, direct pointer arithmetic | 2.59 s | ~8.9× faster |
 | V2b ikj — raw pointers (release) | Add `-O3`, compiler auto-vectorizes to SSE→AVX2+FMA | **0.19 s** | **~122× faster** |
 | V3 — tiled(256) | Cache blocking over all three loop dimensions | 0.61 s | ~38× faster |
+| V4 — hand-written AVX2 (`Gemm_simd`) | Manual `_mm256_fmadd_ps`, flat order, no tiling | ~0.19 s (parity with V2b) | ~122× faster |
+| V5 — k-unrolled accumulators | 4-wide k-unroll, multiple `__m256` accumulators (fixes FMA latency-chain stalls) | ~49 ms | ~2× faster than V4's tiled-SIMD baseline |
+| V6 — 2D register blocking | 2 output rows × 8 columns per tile, halves `B` memory traffic | ~34 ms | further ~1.4× over V5 |
+| V7 — combined (2 rows × 4-wide k-unroll, 8 accumulators) | Merges V5 and V6's strategies into one microkernel | **~34 ms best case, up to ~60 GFLOPS**, `block(64)` best across all sizes | **~2–4× faster than flat auto-vectorized `ikj`, consistently** |
 
-Note: tiled(256) is slower than flat ikj at 1000×1000 — tile management overhead outweighs cache benefit at that working set size. The crossover happens at 2000×2000, where tiled(256) beats ikj by **~1.4×** (4.52 s vs 6.39 s) as the matrix no longer fits comfortably in cache.
+Note: tiled(256) alone (V3) is slower than flat ikj at 1000×1000 — tile management overhead outweighs cache benefit at that working set size. The crossover happens at 2000×2000, where tiled(256) beats ikj by **~1.4×** as the matrix no longer fits comfortably in cache. Once hand-written AVX2 and register blocking (V4–V7) entered the picture, this flipped: `Gemm_tiled_simd` at `block(64)` beats flat `ikj` consistently across **every** tested size (200×200 through 2000×2000), not just the largest one.
 
 → **[Full benchmarking log with all variants and sizes](benchmarking/README.md)**
 
 ### SIMD investigation
 
-Under plain `-O3`, GCC auto-vectorizes all three kernels using SSE (128-bit XMM, 4 floats/instruction). Adding `-march=native` upgrades to AVX2 (256-bit YMM, 8 floats) + FMA (`vfmadd213ps` — multiply-add in one instruction).
+Under plain `-O3`, GCC auto-vectorizes all three original kernels using SSE (128-bit XMM, 4 floats/instruction). Adding `-march=native` upgrades to AVX2 (256-bit YMM, 8 floats) + FMA (`vfmadd213ps` — multiply-add in one instruction).
 
-The runtime barely changed.
+At first, hand-writing the same AVX2 intrinsics the compiler was already emitting (`Gemm_simd`, V4) barely moved the runtime. This was the most important early lesson of the project: **arithmetic throughput was not the bottleneck at that stage** — the kernel was memory/cache bound, so doubling SIMD width had marginal impact because the bottleneck was getting data into registers, not processing it once it was there.
 
-This is the most important thing this project taught: **arithmetic throughput was not the bottleneck**. The kernels are memory/cache bound. Doubling SIMD width had marginal impact because the bottleneck is getting data into registers, not processing it once it's there. OpenBLAS is fast for the same reason tiling matters here — it's about data movement, not compute.
+That framing held only up to a point. Once register blocking was introduced — multiple accumulators to hide FMA latency (V5), then blocking across output rows to reuse loaded `B` values across multiple FMAs instead of reloading (V6), then combining both (V7) — the memory-bound ceiling actually moved. Reducing *how often* memory had to be touched per unit of useful work (not just how fast each touch happened) is what got the fully-tuned `Gemm_tiled_simd` kernel to **~2–4× over flat `ikj`**, consistently, rather than the "marginal impact" seen in the first SIMD pass. The bottleneck was real, but it wasn't fixed — it was moved, by giving the CPU more independent work to overlap per byte of data loaded.
 
 → **[SIMD investigation notes](asm_docs/README.md)**
 
@@ -187,7 +193,7 @@ To run a specific test:
 tiny-inference/
 ├── src/
 │   ├── tensor.{h,cpp}          # 2D float32 tensor, move-only
-│   ├── GEMM.{h,cpp}            # three GEMM kernel variants
+│   ├── GEMM.{h,cpp}            # GEMM kernel variants (naive → tiled → hand-written AVX2 → register-blocked)
 │   ├── linear.{h,cpp}          # Linear layer (weight + bias)
 │   ├── relu.{h,cpp}            # ReLU activation
 │   ├── sequence.{h,cpp}        # layer chain
@@ -213,7 +219,7 @@ tiny-inference/
 
 ## What this is not
 
-This is not a production inference engine. It has no batching, no threading, no quantization, no GPU path. The GEMM is competitive for its level of complexity but not BLAS-level. The `.pth` parser handles the specific opcodes emitted by the PyTorch version used to save this checkpoint — it is not a general pickle interpreter.
+This is not a production inference engine. It has no batching, no threading, no quantization, no GPU path. The GEMM is competitive for its level of complexity but not BLAS-level — the fully hand-tuned `Gemm_tiled_simd` microkernel gets a well-tuned single-threaded core into the ~50-60 GFLOPS range, but production libraries (OpenBLAS, BLIS, MKL) go further with operand packing, multi-level cache-block tuning, and multithreading, none of which are implemented here yet. The `.pth` parser handles the specific opcodes emitted by the PyTorch version used to save this checkpoint — it is not a general pickle interpreter.
 
 It is a study in how the pieces fit together at the level where you can actually see them.
 
@@ -222,7 +228,7 @@ It is a study in how the pieces fit together at the level where you can actually
 ## What's next
 
 - **Multithreaded GEMM** — thread pool integration (currently in progress as a separate concurrency project)
-- **Explicit SIMD microkernels** — hand-written AVX2 intrinsics targeting register reuse, rather than relying on compiler auto-vectorization
+- **Operand packing + multi-level cache blocking** — decouple the k-panel size from the row/column tile size (currently one shared `block_size` does both jobs) and pack `A`/`B` into contiguous panels before the microkernel runs; attempted once already and reverted — the packing loop broke `C`'s temporal locality and the packed buffer didn't fit cache at larger block sizes, so this needs the full 5-loop restructuring, not a patch on the current 3-loop tiling
 - **Arena allocator** — port the custom arena from a parallel memory allocators project to replace heap allocation in the hot path; expected to reduce inference latency further
 - **ONNX support** — extend the model loader to handle `.onnx` format, enabling any ONNX-exported model to run through this engine without conversion
 - **Broader `.pth` opcode coverage** — the current pickle parser handles the opcodes emitted by the checkpoint used here; generalizing it to handle arbitrary PyTorch exports is the next parser milestone
