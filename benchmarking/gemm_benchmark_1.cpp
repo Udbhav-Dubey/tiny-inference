@@ -4,15 +4,17 @@
 #include <chrono>
 #include <iomanip>
 #include <string>
+const int ntgmr=10;// number of times gemm run so we could average it 
+
 struct dura{
     std::chrono::nanoseconds two_hundred;
     std::chrono::nanoseconds five_hundred;
     std::chrono::nanoseconds one_k;
     std::chrono::nanoseconds two_k;
+    double Gflops{};
 };
 std::vector<dura>thelp(4);
 std::vector<std::vector<dura>>bhelp(2,std::vector<dura>(6));
-const int ntgmr=10;// number of times gemm run so we could average it 
 int A_row_size{};
 int A_col_size{};
 int B_row_size{};
@@ -63,7 +65,7 @@ void run_multi(int ar,int ac,int br,int bc,int&turn,int block_size=0,int t2i=0){
     auto start=std::chrono::high_resolution_clock::now();
     for (int i=0;i<ntgmr;i++){
       if (turn==0){ C=Gemm(A,B); }
-      else if (turn==3){C=Gemm_tiled(A,B,block_size);}
+      else if (turn==3){C=Gemm_tiled_scaler(A,B,block_size);}
       else if (turn==2){C=Gemm_simd(A,B);}
       else if (turn==4){C=Gemm_tiled_simd(A,B,block_size);}
       else {C=Gemm_ijk(A,B);}
@@ -103,6 +105,7 @@ void run_multi(int ar,int ac,int br,int bc,int&turn,int block_size=0,int t2i=0){
     auto duration_seconds=std::chrono::duration_cast<std::chrono::seconds>(end-start);
     std::cout << ar << "X" << ac << " * " << br << "X" << bc << " = " << "total : "<<duration.count() << " nanoseconds  average : "<< duration.count()/10 << " nanoseconds \n";
     std::cout << "total : " << duration_seconds.count() << " seconds average : " << duration_seconds.count()/10 << " seconds\n";
+ //   std::cout<<"GFLOPS :: " << (2.0*ar*ac*bc)/(duration.count()/ntgmr) << "\n";
     std::cout << "checksum :: " << C.get_val(0,0) << "\n";
 }
 int main(){

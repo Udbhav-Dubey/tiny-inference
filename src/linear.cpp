@@ -27,7 +27,7 @@ Tensor Linear::forward(Tensor&input){
     assert(in_col==in_feat&&"the col of input should be equal to row of weights for multiplication");
    // print_val(Weight);
     //print_val(input);
-    Tensor Out(Gemm_tiled(input,Weight,256));
+    Tensor Out(Gemm_tiled(input,Weight,128));
     // for now lets do Gemm normal but we would need to figure the best one out in 3 options 
     float*o=Out.data();
     float*b=bias.data();

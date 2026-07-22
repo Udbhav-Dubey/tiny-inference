@@ -24,7 +24,7 @@ add_library(tensor
     src/pth_converter.cpp
 )
 target_compile_options(tensor PRIVATE
-    -march=native
+   -march=native
 )
 target_include_directories(tensor PUBLIC
     ${CMAKE_SOURCE_DIR}/src
@@ -101,6 +101,14 @@ add_executable(test_gemm_simd2
 add_executable(test_gemm_tiled_simd
     test/tiling1.cpp
 )
+add_executable(test_gemm_simd_2
+    test/gemm_test6.cpp
+)
+add_executable(test_packing1
+    test/packing_test.cpp
+)
+target_link_libraries(test_packing1 PRIVATE tensor)
+target_link_libraries(test_gemm_simd_2 PRIVATE tensor)
 target_link_libraries(test_gemm_tiled_simd PRIVATE tensor)
 target_link_libraries(test_gemm_simd2 PRIVATE tensor)
 target_link_libraries(test_gemm_simd PRIVATE tensor)
