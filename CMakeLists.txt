@@ -22,6 +22,7 @@ add_library(tensor
     src/prediction.cpp
     src/image_to_tensor.cpp
     src/pth_converter.cpp
+    src/sigmoid.cpp
 )
 target_compile_options(tensor PRIVATE
    -march=native
