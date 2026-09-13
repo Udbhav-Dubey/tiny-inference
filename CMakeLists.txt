@@ -23,6 +23,7 @@ add_library(tensor
     src/image_to_tensor.cpp
     src/pth_converter.cpp
     src/sigmoid.cpp
+    src/tanh.cpp
 )
 target_compile_options(tensor PRIVATE
    -march=native
